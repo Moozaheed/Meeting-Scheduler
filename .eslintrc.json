@@ -1,0 +1,63 @@
+{
+  "root": true,
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:security/recommended-legacy",
+    "plugin:no-unsanitized/DOM"
+  ],
+  "plugins": ["react-hooks", "security", "no-unsanitized", "import"],
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "react/no-danger": "error",
+    "import/order": [
+      "warn",
+      {
+        "groups": [
+          "builtin",
+          "external",
+          "internal",
+          ["parent", "sibling", "index"]
+        ],
+        "pathGroups": [
+          {
+            "pattern": "{@/lib/**,@/types/**}",
+            "group": "internal",
+            "position": "before"
+          }
+        ],
+        "newlines-between": "always",
+        "alphabetize": { "order": "asc", "caseInsensitive": true }
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["components/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "excludedFiles": ["**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["idb-keyval", "**/lib/persistence/*", "@/lib/persistence/*"],
+                "message": "UI components must never call the persistence layer directly — go through lib/store (Scheduling)."
+              },
+              {
+                "group": ["@react-pdf/renderer", "qrcode.react", "**/lib/card/*", "@/lib/card/*"],
+                "message": "UI components must never call the card-generation engine directly — go through lib/store (Scheduling)'s renderPreview/exportCard."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "security/detect-object-injection": "off"
+      }
+    }
+  ]
+}

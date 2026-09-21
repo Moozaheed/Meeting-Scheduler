@@ -1,0 +1,24 @@
+{
+  "stage": "nfr-design",
+  "upstream_ids": [
+    "NFR1.1", "NFR1.2",
+    "NFR4.1", "NFR4.2", "NFR4.3",
+    "NFR5.1", "NFR5.2", "NFR5.3", "NFR5.4",
+    "NFR6.1",
+    "NFR7.1"
+  ],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "performance-design.md — debounced (~300ms) live preview via lightweight in-DOM render path, well under the 1s budget" },
+    { "id": "NFR1.2", "status": "OK", "target": "performance-design.md — async @react-pdf/renderer toBlob() export with loading state, within the ~50-item scale target" },
+    { "id": "NFR4.1", "status": "OK", "target": "reliability-design.md — PersistenceAdapter/Scheduling try/catch translation to in-memory fallback with non-blocking notice" },
+    { "id": "NFR4.2", "status": "OK", "target": "reliability-design.md — MeetingDraft owned by Presentation, untouched by a failed save" },
+    { "id": "NFR4.3", "status": "N/A", "target": "reliability-design.md — no backup/recovery mechanism designed, consistent with the accepted-risk decision at nfr-requirements" },
+    { "id": "NFR5.1", "status": "OK", "target": "security-design.md — React JSX escaping (DOM) + @react-pdf/renderer Text-node API (PDF), no dangerouslySetInnerHTML" },
+    { "id": "NFR5.2", "status": "OK", "target": "security-design.md — no encryption at rest by design; disclosure statement is the affirmed control" },
+    { "id": "NFR5.3", "status": "OK", "target": "security-design.md — no authentication/authorization architecture designed; unlisted URL only" },
+    { "id": "NFR5.4", "status": "OK", "target": "security-design.md — CSP with per-request script nonce + enumerated directives (img-src, font-src, connect-src, frame-ancestors), closing the nfr-requirements review's implementability gap" },
+    { "id": "NFR6.1", "status": "OK", "target": "scalability-design.md — Vercel default serverless auto-scaling, no custom load balancer or partitioning" },
+    { "id": "NFR7.1", "status": "OK", "target": "observability-design.md — console.error/console.warn only, no external tooling, Vercel's own dashboard for metrics" }
+  ],
+  "reverse": []
+}

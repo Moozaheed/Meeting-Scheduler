@@ -1,0 +1,24 @@
+{
+  "stage": "infrastructure-design",
+  "upstream_ids": [
+    "NFR1.1", "NFR1.2",
+    "NFR4.1", "NFR4.2", "NFR4.3",
+    "NFR5.1", "NFR5.2", "NFR5.3", "NFR5.4",
+    "NFR6.1",
+    "NFR7.1"
+  ],
+  "coverage": [
+    { "id": "NFR1.1", "status": "N/A", "target": "Purely client-side rendering performance (debounced preview); no infrastructure provisioning beyond generic static-asset CDN delivery already covered under NFR6.1" },
+    { "id": "NFR1.2", "status": "N/A", "target": "Purely client-side PDF export; no server-side compute or infrastructure involved" },
+    { "id": "NFR4.1", "status": "N/A", "target": "Client-side persistence fallback (IndexedDB error handling); no infrastructure resource involved" },
+    { "id": "NFR4.2", "status": "N/A", "target": "Client-side form-state ownership; no infrastructure resource involved" },
+    { "id": "NFR4.3", "status": "N/A", "target": "No backup/recovery mechanism by decision; no infrastructure resource to provision" },
+    { "id": "NFR5.1", "status": "N/A", "target": "Application-code-level input escaping (React JSX, @react-pdf/renderer Text nodes); not an infrastructure concern" },
+    { "id": "NFR5.2", "status": "N/A", "target": "No encryption at rest by design (client-only storage); no infrastructure resource to provision" },
+    { "id": "NFR5.3", "status": "N/A", "target": "No authentication architecture; unlisted-URL access control requires no infrastructure resource" },
+    { "id": "NFR5.4", "status": "OK", "target": "infrastructure-specification.md Deployment table (Edge Middleware row) — per-request CSP script-src nonce generated in Vercel Edge Runtime middleware; static headers (HSTS, X-Frame-Options, X-Content-Type-Options, remaining CSP directives) via next.config.js headers(), both deployed as part of every Vercel build" },
+    { "id": "NFR6.1", "status": "OK", "target": "infrastructure-specification.md Deployment table — Vercel default serverless auto-scaling, no custom capacity configuration" },
+    { "id": "NFR7.1", "status": "OK", "target": "monitoring-design.md — Vercel's built-in dashboard/function logs, no external monitoring service provisioned" }
+  ],
+  "reverse": []
+}

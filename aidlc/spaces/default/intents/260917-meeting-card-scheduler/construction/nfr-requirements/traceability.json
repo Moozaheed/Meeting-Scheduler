@@ -1,0 +1,15 @@
+{
+  "stage": "nfr-requirements",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5"],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1, NFR1.2" },
+    { "id": "NFR2", "status": "N/A", "target": "Accessibility already fully specified in requirements.md NFR2.1 and refined-mockups/accessibility-checklist.md — outside this stage's five NFR categories (performance/security/scalability/reliability/observability)" },
+    { "id": "NFR3", "status": "N/A", "target": "Browser/device compatibility already fully specified in requirements.md NFR3.1 and the affirmed E2E test matrix — outside this stage's five NFR categories" },
+    { "id": "NFR4", "status": "OK", "target": "NFR4.1, NFR4.2, NFR4.3" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.1, NFR5.2, NFR5.3, NFR5.4" }
+  ],
+  "reverse": [
+    { "id": "NFR6.1", "status": "N/A", "target": "Derived Scalability requirement surfaced by this stage's own interview (Q5) — no originating inception NFR category (requirements.md defines Performance/Accessibility/Browser-Compat/Reliability/Security only)" },
+    { "id": "NFR7.1", "status": "N/A", "target": "Derived Observability requirement surfaced by this stage's own interview (Q2) — no originating inception NFR category" }
+  ]
+}

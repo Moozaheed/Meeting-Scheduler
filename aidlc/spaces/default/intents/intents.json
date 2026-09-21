@@ -1,0 +1,16 @@
+[
+  {
+    "uuid": "01a0af34-015d-7422-8de3-0d57a5a43587",
+    "slug": "meeting-card-scheduler",
+    "dirName": "260917-meeting-card-scheduler",
+    "scope": "meeting-card-scheduler",
+    "status": "in-flight"
+  },
+  {
+    "uuid": "01a0af4e-6d14-759d-ab43-fd080c5be8ad",
+    "slug": "git-cicd-automation",
+    "dirName": "260917-git-cicd-automation",
+    "scope": "infra",
+    "status": "in-flight"
+  }
+]

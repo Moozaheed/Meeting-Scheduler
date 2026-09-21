@@ -1,0 +1,35 @@
+{
+  "stage": "functional-design",
+  "upstream_ids": [
+    "FR1.1", "FR1.2", "FR1.3",
+    "FR2.1", "FR2.2", "FR2.3",
+    "FR3.1", "FR3.2", "FR3.3", "FR3.4",
+    "FR4.1", "FR4.2",
+    "FR5.1", "FR5.2", "FR5.3", "FR5.4", "FR5.5",
+    "FR6.1", "FR6.2"
+  ],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "BR1.1, BR1.2, BR1.4" },
+    { "id": "FR1.2", "status": "OK", "target": "BR1.3" },
+    { "id": "FR1.3", "status": "OK", "target": "BR1.1, BR1.2, BR1.4" },
+    { "id": "FR2.1", "status": "OK", "target": "BR2.2, BR2.3" },
+    { "id": "FR2.2", "status": "OK", "target": "BR2.1" },
+    { "id": "FR2.3", "status": "N/A", "target": "UI-scale robustness — addressed in frontend-components.md § AgendaItemRow scale-handling note, not a discrete business rule" },
+    { "id": "FR3.1", "status": "OK", "target": "BR3.3, BR3.4" },
+    { "id": "FR3.2", "status": "OK", "target": "BR3.1" },
+    { "id": "FR3.3", "status": "OK", "target": "BR3.2" },
+    { "id": "FR3.4", "status": "N/A", "target": "UI-scale robustness — addressed in frontend-components.md § AttendeeRow scale-handling note, not a discrete business rule" },
+    { "id": "FR4.1", "status": "OK", "target": "BR4.1" },
+    { "id": "FR4.2", "status": "OK", "target": "BR4.2" },
+    { "id": "FR5.1", "status": "N/A", "target": "Card rendering workflow — functional-spec.md Workflow 4, no discrete business rule beyond BR5.1's QR logic and BR5.2's fixed dimension" },
+    { "id": "FR5.2", "status": "OK", "target": "BR5.2" },
+    { "id": "FR5.3", "status": "OK", "target": "BR5.1" },
+    { "id": "FR5.4", "status": "N/A", "target": "Live preview workflow — functional-spec.md Workflow 4" },
+    { "id": "FR5.5", "status": "N/A", "target": "Error-handling workflow — functional-spec.md Workflow 4 step 5, and the affirmed team error-handling practice" },
+    { "id": "FR6.1", "status": "N/A", "target": "Persistence architecture — entities.md + PersistenceAdapter component, no discrete business rule" },
+    { "id": "FR6.2", "status": "OK", "target": "BR6.1" }
+  ],
+  "reverse": [
+    { "id": "BR7.1", "status": "N/A", "target": "Derived UI-display concern surfaced by this stage's own interview (Q4/Q4a) — no originating FR in requirements.md" }
+  ]
+}
