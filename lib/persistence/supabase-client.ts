@@ -18,8 +18,12 @@ let client: SupabaseClient | null = null;
 /** Lazily creates the singleton client on first real use — not at module import time, so importing this file never throws in an environment without the env vars set (e.g. a test file that mocks this module wholesale). */
 function getClient(): SupabaseClient {
   if (!client) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    // Trimmed defensively: a value pasted into a CI secrets UI easily picks
+    // up a trailing newline or space (found investigating a CI-only
+    // failure — proxy.ts's connect-src silently dropped the Supabase
+    // origin for the exact same reason).
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
     if (!url || !anonKey) {
       throw new Error(
         'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set — see .env.example.',

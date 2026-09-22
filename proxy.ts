@@ -63,9 +63,9 @@ function generateNonce(): string {
   return btoa(String.fromCharCode(...bytes));
 }
 
-/** Returns just the origin (e.g. "https://xyz.supabase.co") from NEXT_PUBLIC_SUPABASE_URL, or undefined if unset/malformed — never throws, so a missing env var degrades to a stricter CSP rather than crashing every request. */
+/** Returns just the origin (e.g. "https://xyz.supabase.co") from NEXT_PUBLIC_SUPABASE_URL, or undefined if unset/malformed — never throws, so a missing env var degrades to a stricter CSP rather than crashing every request. Trims the raw value first: a value pasted into a CI secrets UI easily picks up a trailing newline or space, which would otherwise make `new URL()` throw and silently drop the Supabase origin from connect-src. */
 function supabaseOriginFromEnv(): string | undefined {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   if (!url) return undefined;
   try {
     return new URL(url).origin;
