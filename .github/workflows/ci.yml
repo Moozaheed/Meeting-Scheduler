@@ -17,7 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # PR-diff-only scope (this stage's Q2) — just the incoming commits, not full history
+          # Full history, not a shallow PR-diff scope (this stage's original Q2
+          # intent) — a shallow fetch-depth only works for a single-commit PR;
+          # gitleaks-action needs the commit *before* the PR's first commit to
+          # resolve its scan range, which a 2+-commit PR won't have fetched at
+          # any fixed shallow depth (found via a real CI run on a 2-commit PR:
+          # "ambiguous argument ... unknown revision or path not in the working
+          # tree"). Cheap for a repo this size.
+          fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,12 +79,16 @@ jobs:
     needs: [lint-typecheck-test]
     env:
       # Client-safe, public values (README.md "Environment variables") —
-      # stored as repository Variables, not Secrets, because they are
-      # meant to be embedded in the browser bundle. playwright.config.ts's
-      # webServer runs `npm run build && npm run start`, which needs these
-      # at build time to talk to the real Supabase project.
-      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      # meant to be embedded in the browser bundle, so repository
+      # Variables is the correct place for them (unlike a real secret).
+      # Read from either `vars` or `secrets` here, since both work
+      # functionally and a first-time setup easily lands them under the
+      # wrong tab (they're both on the same GitHub settings page).
+      # playwright.config.ts's webServer runs `npm run build && npm run
+      # start`, which needs these at build time to talk to the real
+      # Supabase project.
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
