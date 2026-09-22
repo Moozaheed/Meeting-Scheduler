@@ -1,0 +1,540 @@
+<title>Build Journey</title>
+<meta name="description" content="How the Meeting Scheduler &amp; Invitation Card Generator went from a one-paragraph brief to a live, tested, deployed application through the AI-DLC lifecycle.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,420;9..144,560;9..144,650;9..144,720&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#f5f6f8; --bg-raised:#ffffff; --bg-sunken:#eceef2;
+    --ink:#11151c; --ink-soft:#4a5261; --ink-faint:#868f9f;
+    --line:#dfe2e8; --line-strong:#c5cad3;
+    --accent:#0d7d74; --accent-ink:#075a53; --accent-soft:#e2f4f1;
+    --good:#177a4b; --good-soft:#e2f4e9;
+    --warn:#8a5a00; --warn-soft:#fbf0d8;
+    --crit:#a32a20; --crit-soft:#fbe8e5;
+    --shadow: 0 1px 2px rgba(17,21,28,.04), 0 8px 24px -12px rgba(17,21,28,.12);
+    --font-display:'Fraunces', ui-serif, Georgia, serif;
+    --font-body:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+    --mono-bg:#10151c; --mono-ink:#d8e2ea; --mono-faint:#7c8a9a; --mono-line:#28323e;
+    --mono-green:#7fd99a; --mono-amber:#e8c36a; --mono-blue:#7ec8e3; --mono-pink:#e39bd0;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b0e13; --bg-raised:#12161e; --bg-sunken:#0e1117;
+      --ink:#e7ebf1; --ink-soft:#a7b0c0; --ink-faint:#6d7688;
+      --line:#232a35; --line-strong:#323b49;
+      --accent:#54d6c8; --accent-ink:#9af0e4; --accent-soft:#12332f;
+      --good:#5cd694; --good-soft:#103322;
+      --warn:#f0c05a; --warn-soft:#3a2c0b;
+      --crit:#f0897c; --crit-soft:#3b1a16;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b0e13; --bg-raised:#12161e; --bg-sunken:#0e1117;
+    --ink:#e7ebf1; --ink-soft:#a7b0c0; --ink-faint:#6d7688;
+    --line:#232a35; --line-strong:#323b49;
+    --accent:#54d6c8; --accent-ink:#9af0e4; --accent-soft:#12332f;
+    --good:#5cd694; --good-soft:#103322;
+    --warn:#f0c05a; --warn-soft:#3a2c0b;
+    --crit:#f0897c; --crit-soft:#3b1a16;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--font-body); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent-soft); color:var(--accent-ink); }
+  a{ color:var(--accent-ink); text-decoration-color:var(--line-strong); text-underline-offset:3px; }
+  a:hover{ text-decoration-color:currentColor; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:2px; }
+  h1,h2,h3,h4{ font-family:var(--font-display); font-weight:650; text-wrap:balance; margin:0; color:var(--ink); }
+  code, .mono{ font-family:var(--font-mono); }
+  .container{ max-width:920px; margin:0 auto; padding:0 24px; }
+  .eyebrow{
+    font-family:var(--font-mono); font-size:12.5px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--accent-ink); font-weight:500;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 24px; max-width:920px; margin:0 auto; }
+  .brand{ display:flex; align-items:center; gap:9px; font-family:var(--font-mono); font-size:13.5px; font-weight:500; color:var(--ink-soft); }
+  .brand .dot{ width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 0 3px var(--good-soft); flex:none; }
+  .toplinks{ display:flex; gap:18px; font-family:var(--font-mono); font-size:13px; }
+  .toplinks a{ color:var(--ink-soft); }
+  .toplinks a:hover{ color:var(--accent-ink); }
+
+  /* ---------- hero ---------- */
+  .hero{ padding:64px 0 40px; }
+  .hero h1{ font-size:clamp(32px,4.6vw,48px); line-height:1.08; max-width:15ch; }
+  .hero h1 em{ font-style:italic; color:var(--accent-ink); }
+  .hero .dek{ margin-top:16px; max-width:58ch; font-size:18px; color:var(--ink-soft); }
+  .badge-row{ display:flex; flex-wrap:wrap; gap:9px; margin-top:26px; }
+  .badge{
+    display:inline-flex; align-items:center; gap:6px; padding:6px 11px; border-radius:99px;
+    font-family:var(--font-mono); font-size:12.5px; font-weight:500; border:1px solid var(--line-strong);
+    background:var(--bg-raised); color:var(--ink-soft);
+  }
+  .badge.good{ background:var(--good-soft); color:var(--good); border-color:transparent; }
+  .badge.accent{ background:var(--accent-soft); color:var(--accent-ink); border-color:transparent; }
+  .badge svg{ width:13px; height:13px; }
+
+  /* ---------- stat grid ---------- */
+  .stats{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr)); gap:1px;
+    background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:36px;
+  }
+  .stat{ background:var(--bg-raised); padding:18px 16px; }
+  .stat .n{ font-family:var(--font-mono); font-size:26px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .stat .l{ margin-top:3px; font-size:12.5px; color:var(--ink-faint); }
+
+  /* ---------- section shell ---------- */
+  section{ padding:56px 0; border-top:1px solid var(--line); }
+  section > .container > .shead{ margin-bottom:28px; }
+  .shead h2{ font-size:28px; margin-top:6px; }
+  .shead p{ margin-top:10px; max-width:62ch; color:var(--ink-soft); font-size:15.5px; }
+
+  /* ---------- journey timeline ---------- */
+  .phase{ position:relative; padding-left:30px; margin-bottom:34px; }
+  .phase:last-child{ margin-bottom:0; }
+  .phase::before{ /* spine */
+    content:""; position:absolute; left:6px; top:30px; bottom:-34px; width:1.5px; background:var(--line-strong);
+  }
+  .phase:last-child::before{ display:none; }
+  .phase-head{ display:flex; align-items:baseline; gap:12px; margin-bottom:14px; }
+  .phase-dot{
+    position:absolute; left:0; top:4px; width:13px; height:13px; border-radius:50%;
+    background:var(--bg-raised); border:2.5px solid var(--accent);
+  }
+  .phase-num{ font-family:var(--font-mono); font-size:12.5px; color:var(--ink-faint); }
+  .phase-head h3{ font-size:19px; }
+  .phase-when{ margin-left:auto; font-family:var(--font-mono); font-size:12px; color:var(--ink-faint); }
+  .stage-list{ display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .stage{ background:var(--bg-raised); padding:13px 16px; display:grid; grid-template-columns:1fr auto; gap:6px 14px; align-items:start; }
+  .stage .name{ font-weight:600; font-size:14.5px; }
+  .stage .desc{ grid-column:1/-1; font-size:13.5px; color:var(--ink-soft); line-height:1.55; }
+  .tag{
+    font-family:var(--font-mono); font-size:11px; font-weight:500; padding:3px 8px; border-radius:6px;
+    white-space:nowrap; height:fit-content;
+  }
+  .tag.approved{ background:var(--good-soft); color:var(--good); }
+  .tag.fixed{ background:var(--warn-soft); color:var(--warn); }
+  .tag.live{ background:var(--accent-soft); color:var(--accent-ink); }
+
+  /* ---------- architecture ---------- */
+  .stack-diagram{ display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-top:24px; }
+  .stack-row{ background:var(--bg-raised); padding:14px 18px; display:flex; align-items:center; gap:14px; }
+  .stack-row .idx{ font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); width:16px; flex:none; }
+  .stack-row .ttl{ font-weight:600; font-size:14.5px; min-width:150px; }
+  .stack-row .desc{ font-size:13.5px; color:var(--ink-soft); }
+  .stack-row.never{ background:var(--crit-soft); }
+  .stack-row.never .ttl{ color:var(--crit); }
+
+  .pill-cloud{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+  .pill{
+    font-family:var(--font-mono); font-size:12.5px; padding:6px 11px; border-radius:8px;
+    background:var(--bg-sunken); border:1px solid var(--line); color:var(--ink-soft);
+  }
+  .pill b{ color:var(--ink); font-weight:600; }
+
+  /* ---------- bug postmortem cards ---------- */
+  .bugs{ display:grid; grid-template-columns:1fr; gap:16px; margin-top:24px; }
+  .bugcard{
+    background:var(--bg-raised); border:1px solid var(--line); border-radius:14px; padding:22px 22px 20px;
+    box-shadow:var(--shadow);
+  }
+  .bugcard .bughead{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .bugcard .bugnum{
+    font-family:var(--font-mono); font-size:12px; color:var(--crit); background:var(--crit-soft);
+    border-radius:7px; padding:3px 8px; font-weight:600;
+  }
+  .bugcard h4{ font-size:17px; }
+  .bugcard .status{ margin-left:auto; }
+  .bugcard .row{ margin-top:14px; display:grid; grid-template-columns:110px 1fr; gap:4px 14px; font-size:14px; }
+  .bugcard .row .k{ font-family:var(--font-mono); font-size:11.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; padding-top:2px; }
+  .bugcard .row .v{ color:var(--ink-soft); line-height:1.55; }
+  .bugcard .row .v.fix{ color:var(--good); }
+
+  /* ---------- terminal panel ---------- */
+  .term{
+    background:var(--mono-bg); color:var(--mono-ink); border-radius:12px; padding:18px 20px;
+    font-family:var(--font-mono); font-size:12.8px; line-height:1.75; overflow-x:auto; margin-top:18px;
+    border:1px solid var(--mono-line);
+  }
+  .term .p{ color:var(--mono-green); }
+  .term .c{ color:var(--mono-faint); }
+  .term .h{ color:var(--mono-amber); }
+  .term .u{ color:var(--mono-blue); }
+  .term-title{
+    font-family:var(--font-mono); font-size:11.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em;
+    margin-top:26px; margin-bottom:0;
+  }
+
+  /* ---------- CI table ---------- */
+  table{ width:100%; border-collapse:collapse; margin-top:20px; font-size:13.8px; }
+  caption{ caption-side:top; text-align:left; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em; padding-bottom:9px; }
+  th{ text-align:left; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; font-weight:500; padding:0 12px 9px; border-bottom:1px solid var(--line-strong); }
+  td{ padding:11px 12px; border-bottom:1px solid var(--line); color:var(--ink-soft); vertical-align:top; }
+  tr:last-child td{ border-bottom:none; }
+  td.file{ font-family:var(--font-mono); font-size:12.8px; color:var(--ink); white-space:nowrap; }
+  .table-wrap{ overflow-x:auto; }
+  .dash-check{ color: var(--good); font-weight: 700; }
+
+  /* ---------- checklist ---------- */
+  .checklist{ display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-top:22px; }
+  .check{ background:var(--bg-raised); padding:14px 16px; display:flex; gap:12px; align-items:flex-start; }
+  .check .box{ width:19px; height:19px; border-radius:5px; flex:none; margin-top:2px; display:flex; align-items:center; justify-content:center; }
+  .check.done .box{ background:var(--good-soft); color:var(--good); }
+  .check.open .box{ background:var(--warn-soft); color:var(--warn); }
+  .check .tx b{ font-weight:600; }
+  .check .tx{ font-size:14.2px; color:var(--ink-soft); line-height:1.55; }
+  .check .tx b{ color:var(--ink); }
+
+  footer{ padding:40px 0 64px; }
+  footer .fline{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; font-family:var(--font-mono); font-size:12.5px; color:var(--ink-faint); padding-top:22px; border-top:1px solid var(--line); }
+
+  @media (max-width:640px){
+    .container{ padding:0 18px; }
+    .hero{ padding:44px 0 32px; }
+    .stage{ grid-template-columns:1fr; }
+    .stack-row{ flex-wrap:wrap; }
+  }
+
+  @media (prefers-reduced-motion:no-preference){
+    .fade-in{ animation: fadeIn .5s ease both; }
+    .hero h1{ animation-delay:.02s; }
+    .hero .dek{ animation-delay:.08s; }
+    .badge-row{ animation-delay:.14s; }
+    .stats{ animation-delay:.2s; }
+  }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none; } }
+</style>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="dot"></span> meeting-card-scheduler · build journey</div>
+    <div class="toplinks">
+      <a href="https://meeting-card-scheduler.vercel.app" target="_blank" rel="noopener">Live app ↗</a>
+      <a href="https://github.com/Mozahad1563/meeting-scheduler" target="_blank" rel="noopener">Repo ↗</a>
+    </div>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="container">
+    <p class="eyebrow fade-in">Delivery report · AI-DLC</p>
+    <h1 class="fade-in" style="margin-top:10px">A meeting scheduler and <em>invitation-card engine</em>, from brief to production</h1>
+    <p class="dek fade-in">Twenty stages, four phases, one continuous AI-DLC run — requirements through a live Vercel deployment. This is the record of what was decided, what was built, what broke in a real browser, and how it shipped.</p>
+    <div class="badge-row fade-in">
+      <span class="badge good">● production live</span>
+      <span class="badge">20 / 20 stages complete</span>
+      <span class="badge">53 / 53 tests passing</span>
+      <span class="badge">93.7% line coverage</span>
+      <span class="badge accent">0 known vulnerabilities</span>
+    </div>
+    <div class="stats fade-in">
+      <div class="stat"><div class="n">4</div><div class="l">lifecycle phases</div></div>
+      <div class="stat"><div class="n">56</div><div class="l">source files generated</div></div>
+      <div class="stat"><div class="n">5</div><div class="l">browsers tested</div></div>
+      <div class="stat"><div class="n">2</div><div class="l">production bugs caught &amp; fixed</div></div>
+      <div class="stat"><div class="n">0</div><div class="l">third-party APIs</div></div>
+    </div>
+  </div>
+</header>
+
+<section id="journey">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow">01 · The journey</p>
+      <h2>Twenty stages, four phases</h2>
+      <p>AI-DLC walked the build from a one-paragraph brief to shipped code as a sequence of gated stages — each one produced a written artifact, most were reviewed, and every one stopped for an explicit approve / request-changes decision before the next began.</p>
+    </div>
+
+    <!-- IDEATION -->
+    <div class="phase">
+      <div class="phase-dot"></div>
+      <div class="phase-head"><span class="phase-num">PHASE 1</span><h3>Ideation</h3><span class="phase-when">3 stages</span></div>
+      <div class="stage-list">
+        <div class="stage">
+          <span class="name">Intent Capture</span><span class="tag approved">approved</span>
+          <span class="desc">Turned the original brief into a structured intent. Surfaced and resolved the one real ambiguity in "zero cloud dependency, self-contained repo": did that mean a purely local per-user install, or one centrally-hosted instance with no shared database? Confirmed the latter.</span>
+        </div>
+        <div class="stage">
+          <span class="name">Scope Definition</span><span class="tag approved">approved</span>
+          <span class="desc">Locked the scope profile (<code>meeting-card-scheduler</code>), turned off the walking-skeleton ceremony for this project size, and fixed the boundary: scheduling + agenda + attendees + card export in scope; auth, multi-tenant, and a shared backend explicitly out.</span>
+        </div>
+        <div class="stage">
+          <span class="name">Approval Handoff</span><span class="tag approved">approved</span>
+          <span class="desc">Wrote the initiative brief and handed the confirmed scope into Inception.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- INCEPTION -->
+    <div class="phase">
+      <div class="phase-dot"></div>
+      <div class="phase-head"><span class="phase-num">PHASE 2</span><h3>Inception</h3><span class="phase-when">4 stages</span></div>
+      <div class="stage-list">
+        <div class="stage">
+          <span class="name">Requirements Analysis</span><span class="tag approved">approved</span>
+          <span class="desc">Functional and business requirements written and numbered (FR/BR), each with a pass/fail acceptance criterion.</span>
+        </div>
+        <div class="stage">
+          <span class="name">Domain Design</span><span class="tag approved">approved</span>
+          <span class="desc">Modeled the domain — Meeting, AgendaItem, Attendee, Host — and fixed the invitation card at a single US Letter page size, no host-selectable dimension (resolving BR5.2).</span>
+        </div>
+        <div class="stage">
+          <span class="name">Refined Mockups</span><span class="tag approved">approved</span>
+          <span class="desc">UI wireframes refined for the scheduling form, agenda builder, attendee list, and the split-screen live card preview.</span>
+        </div>
+        <div class="stage">
+          <span class="name">Practices Discovery</span><span class="tag approved">approved</span>
+          <span class="desc">The pivotal interview — nine questions that shaped everything downstream: test-after methodology at an 80% coverage floor, a hard layering rule (UI never touches persistence or the card engine directly), deploy-on-merge with no staging tier, three security-tooling commitments (Gitleaks, Dependabot, CodeQL), a mandatory "clear my data" control, and a deliberately <em>lighter</em> PDF/QR test depth — the team declined deep content-verification in favor of a "didn't crash, produced output" check.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONSTRUCTION -->
+    <div class="phase">
+      <div class="phase-dot"></div>
+      <div class="phase-head"><span class="phase-num">PHASE 3</span><h3>Construction</h3><span class="phase-when">7 stages</span></div>
+      <div class="stage-list">
+        <div class="stage">
+          <span class="name">Functional Design</span><span class="tag approved">approved</span>
+          <span class="desc">Component architecture and workflows drafted; a layering slip caught in the <em>next</em> stage's review was fixed back here at the source.</span>
+        </div>
+        <div class="stage">
+          <span class="name">NFR Requirements</span><span class="tag fixed">1 major fix</span>
+          <span class="desc">Performance, security, scalability, reliability, and observability targets set. Locked the library choices — Vercel, <code>@react-pdf/renderer</code>, <code>qrcode.react</code>, <code>idb-keyval</code>. Adversarial review found one Major and four Minor citation-accuracy issues, all fixed.</span>
+        </div>
+        <div class="stage">
+          <span class="name">NFR Design</span><span class="tag fixed">critical fix</span>
+          <span class="desc">First review round failed on a real architecture violation — <code>ExportButton</code> called the card engine directly, skipping the domain layer. Fixed in both the NFR design and, proactively, in the upstream functional design it traced back to. Second review: clean.</span>
+        </div>
+        <div class="stage">
+          <span class="name">Infrastructure Design</span><span class="tag fixed">3 major fixes</span>
+          <span class="desc">Vercel + Edge Middleware topology designed for the CSP nonce, monitoring, and the CI/CD pipeline shape. First review: three Major and one Minor finding. Second review: clean.</span>
+        </div>
+        <div class="stage">
+          <span class="name">Code Generation</span><span class="tag fixed">audit finding fixed</span>
+          <span class="desc">56 files generated across 12 planned steps under a test-after contract — 53 tests written alongside the code, 93.7% line coverage. Adversarial review caught a real gap: <code>next@14.2.35</code> carried a Critical unauthenticated-RCE-class production vulnerability the summary had mischaracterized as dev-tooling-only. Fixed by upgrading to <code>next@16.3.5</code> and carrying the app through the Next.js 15/16 migration (async route params, <code>middleware.ts</code> → <code>proxy.ts</code>).</span>
+        </div>
+        <div class="stage">
+          <span class="name">CI Pipeline</span><span class="tag approved">approved</span>
+          <span class="desc">GitHub Actions workflows written: pre-merge gates, a weekly audit job, and Dependabot — detailed in the CI/CD section below.</span>
+        </div>
+        <div class="stage">
+          <span class="name">Build and Test</span><span class="tag fixed">2 bugs found live</span>
+          <span class="desc">Ran the full suite across five real browsers. Two defects surfaced that no jsdom unit test could see — both are broken down in the postmortem section below. Diagnosed, fixed, and re-verified green before this stage closed.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPERATION -->
+    <div class="phase">
+      <div class="phase-dot"></div>
+      <div class="phase-head"><span class="phase-num">PHASE 4</span><h3>Operation</h3><span class="phase-when">3 stages</span></div>
+      <div class="stage-list">
+        <div class="stage">
+          <span class="name">Deployment Pipeline</span><span class="tag approved">approved</span>
+          <span class="desc">Deploy-on-merge via Vercel's GitHub App integration, a recreate-on-deploy strategy (no canary/blue-green — traffic is too low and the app too stateless to benefit), and a rollback runbook built around Vercel's instant-rollback.</span>
+        </div>
+        <div class="stage">
+          <span class="name">Environment Provisioning</span><span class="tag approved">approved</span>
+          <span class="desc">No AWS resources, no IaC tool, and no runtime secrets to provision — documented as a five-step manual Vercel checklist for a human to run once, since this workflow holds no cloud credentials of its own.</span>
+        </div>
+        <div class="stage">
+          <span class="name">Deployment Execution</span><span class="tag live">shipped live</span>
+          <span class="desc">The manual checklist got done for real, in-session — see the deployment walkthrough below. Git initialized, pushed, Vercel project created, production deploy executed, and a full value-stream smoke test run against the live URL.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="architecture">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow">02 · Architecture</p>
+      <h2>Four layers, one rule that isn't optional</h2>
+      <p>The scheduling UI never reaches into storage or the PDF engine on its own — every access to persistence or card generation is required to pass through the domain/state layer. That's not a convention left to discipline; it's enforced by an ESLint rule that fails the build.</p>
+    </div>
+    <div class="stack-diagram">
+      <div class="stack-row"><span class="idx">01</span><span class="ttl">UI layer</span><span class="desc"><code>app/</code> routes + <code>components/</code> — forms, agenda builder, attendee list, live preview. Reads and writes state only through hooks.</span></div>
+      <div class="stack-row"><span class="idx">02</span><span class="ttl">Domain / state</span><span class="desc"><code>lib/store/</code> — meeting, agenda, and attendee operations; owns every validation rule (BR2.3, BR3.2–3.4) and the render/export delegating methods the UI actually calls.</span></div>
+      <div class="stack-row"><span class="idx">03</span><span class="ttl">Persistence</span><span class="desc"><code>lib/persistence/</code> — an IndexedDB/localStorage adapter behind a narrow save/load/clear interface. Handles quota limits, private-browsing restrictions, and corrupted stored data without crashing the app.</span></div>
+      <div class="stack-row"><span class="idx">04</span><span class="ttl">Card engine</span><span class="desc"><code>lib/card/</code> — pure functions from validated domain data to a rendered PDF and QR code. No DOM access, no store access; independently testable.</span></div>
+      <div class="stack-row never"><span class="idx">✕</span><span class="ttl">Forbidden</span><span class="desc">Any component in <code>components/</code> or <code>app/</code> importing <code>lib/persistence/*</code>, <code>lib/card/*</code>, <code>@react-pdf/renderer</code>, or <code>qrcode.react</code> directly — blocked by <code>.eslintrc.json</code>, CI-blocking.</span></div>
+    </div>
+
+    <p class="term-title">Stack</p>
+    <div class="pill-cloud">
+      <span class="pill"><b>Next.js 16.3.5</b> · App Router</span>
+      <span class="pill"><b>React 18.3.1</b> + TypeScript (strict)</span>
+      <span class="pill"><b>Tailwind CSS</b></span>
+      <span class="pill"><b>@react-pdf/renderer 4.9.0</b> · PDF export</span>
+      <span class="pill"><b>qrcode.react 3.1.0</b> · QR generation</span>
+      <span class="pill"><b>idb-keyval 6.2.1</b> · browser storage</span>
+      <span class="pill"><b>lucide-react</b> · icons</span>
+      <span class="pill"><b>Vitest + Testing Library</b> · unit/component</span>
+      <span class="pill"><b>Playwright</b> · 5-browser E2E</span>
+      <span class="pill"><b>Vercel</b> · hosting, zero backend</span>
+    </div>
+  </div>
+</section>
+
+<section id="bugs">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow">03 · What broke in a real browser</p>
+      <h2>Two bugs, invisible to 53 passing unit tests</h2>
+      <p>Every one of the 53 Vitest component tests was green throughout. Both of these defects only exist because jsdom — the browser simulator those tests run in — doesn't enforce a Content-Security-Policy the way a real browser does. Playwright's five-browser E2E pass is what caught them, both diagnosed with a disposable script that just listened for console and page errors.</p>
+    </div>
+    <div class="bugs">
+      <div class="bugcard">
+        <div class="bughead">
+          <span class="bugnum">BUG 01</span>
+          <h4>The app never rendered — blank page, every real browser</h4>
+          <span class="status"><span class="badge good" style="margin:0">fixed</span></span>
+        </div>
+        <div class="row"><span class="k">Symptom</span><span class="v">Meetings List never appeared. First E2E assertion timed out on a completely blank page.</span></div>
+        <div class="row"><span class="k">Cause</span><span class="v">Next.js's own inline hydration bootstrap scripts carry no <code>nonce</code> attribute unless a Server Component reads the per-request nonce via <code>headers()</code> — nothing in <code>app/layout.tsx</code> did that, so the CSP's <code>script-src 'nonce-…'</code> directive silently blocked the app's own startup scripts.</span></div>
+        <div class="row"><span class="k">Fix</span><span class="v fix">Made <code>RootLayout</code> an async Server Component reading <code>(await headers()).get('x-nonce')</code> — the read alone activates Next's automatic nonce propagation to every script tag it renders.</span></div>
+      </div>
+      <div class="bugcard">
+        <div class="bughead">
+          <span class="bugnum">BUG 02</span>
+          <h4>PDF export failed silently after the first fix landed</h4>
+          <span class="status"><span class="badge good" style="margin:0">fixed</span></span>
+        </div>
+        <div class="row"><span class="k">Symptom</span><span class="v">With hydration fixed, the flow ran clean through meeting creation and save — then export threw at the last step.</span></div>
+        <div class="row"><span class="k">Cause</span><span class="v"><code>@react-pdf/renderer</code>'s font-layout engine compiles a WebAssembly module at runtime. The CSP granted neither <code>'wasm-unsafe-eval'</code> in <code>script-src</code> nor <code>data:</code> in <code>connect-src</code>, so the browser blocked <code>WebAssembly.instantiate()</code> outright.</span></div>
+        <div class="row"><span class="k">Fix</span><span class="v fix">Added exactly those two CSP grants in <code>proxy.ts</code> — deliberately narrower than <code>'unsafe-eval'</code>, permitting WASM compilation only — and upgraded the library 3.4.4 → 4.9.0 for a clearer failure signal along the way.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="cicd">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow">04 · Continuous integration</p>
+      <h2>Four gates before merge, one gate after</h2>
+      <p>All four pre-merge checks run in parallel — GitHub branch protection requiring every one as a status check gets the same blocking guarantee as a sequential pipeline, with faster feedback.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>.github/workflows/ci.yml</caption>
+        <thead><tr><th>Job</th><th>Trigger</th><th>Checks</th></tr></thead>
+        <tbody>
+          <tr><td class="file">gitleaks</td><td>every PR</td><td>Secret scanning across the PR diff</td></tr>
+          <tr><td class="file">lint-typecheck-test</td><td>every PR</td><td><code>eslint</code>, <code>tsc --noEmit</code>, full Vitest suite with the 80% coverage floor enforced</td></tr>
+          <tr><td class="file">codeql</td><td>every PR</td><td>GitHub CodeQL default setup, JavaScript/TypeScript</td></tr>
+          <tr><td class="file">dependency-audit</td><td>every PR</td><td><code>npm audit --omit=dev --audit-level=high</code></td></tr>
+          <tr><td class="file">e2e-smoke</td><td>push to <code>main</code>, post-merge</td><td>Full Playwright happy-path suite; needs <code>lint-typecheck-test</code> first; uploads the HTML report as an artifact</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>Recurring jobs</caption>
+        <thead><tr><th>File</th><th>Schedule</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="file">scheduled-audit.yml</td><td>weekly (Mon 06:00 UTC) + manual</td><td><code>npm audit --omit=dev</code>, independent of PR activity</td></tr>
+          <tr><td class="file">dependabot.yml</td><td>weekly</td><td>npm dependency PRs, dev-dependencies grouped into one PR</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:20px; font-size:14px; color:var(--ink-soft)">No deploy secret lives in GitHub Actions at all — Vercel's GitHub App integration deploys independently of these workflows once connected. The only credential any job uses is the auto-provisioned <code>GITHUB_TOKEN</code>, scoped to <code>contents: read</code> and <code>security-events: write</code>.</p>
+  </div>
+</section>
+
+<section id="deploy">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow">05 · Going live</p>
+      <h2>Git, GitHub, Vercel — done in one sitting</h2>
+      <p>The workspace held zero commits until Deployment Execution. Everything below ran in that single stage: a git history was created, the code was pushed to a real repository, a Vercel project was stood up, and the app was deployed straight to production.</p>
+    </div>
+
+    <p class="term-title">1 — Git history &amp; push</p>
+    <div class="term">
+<span class="c">$</span> git add -A                                          <span class="c"># 481 files: app source + full AI-DLC record</span><br>
+<span class="c">$</span> git commit -m <span class="h">"Initial commit: Meeting Scheduler &amp; Invitation Card Generator"</span><br>
+<span class="c">$</span> git branch -M main<br>
+<span class="c">$</span> git remote add origin <span class="u">git@github.com:Mozahad1563/meeting-scheduler.git</span><br>
+<span class="c">$</span> git push -u origin main<br>
+<span class="p">✓ branch 'main' set up to track 'origin/main'</span>
+    </div>
+
+    <p class="term-title">2 — Vercel project &amp; deploy</p>
+    <div class="term">
+<span class="c">$</span> npx vercel link --yes<br>
+<span class="p">✓ Created  mozahed-s-projects/meeting-card-scheduler</span><br>
+<span class="c">⚠ GitHub App auto-connect: 400 — Vercel account lacks admin access on the repo</span><br>
+<span class="c">  (a one-time dashboard authorization, not resolvable from the CLI)</span><br>
+<br>
+<span class="c">$</span> npx vercel --prod --yes<br>
+<span class="c">  Building… Next.js 16.3.5, Turbopack — typecheck clean, 4 routes generated</span><br>
+<span class="p">✓ Production   https://meeting-card-scheduler.vercel.app</span><br>
+<span class="p">✓ readyState: READY</span>
+    </div>
+
+    <p class="term-title">3 — Production verification</p>
+    <div class="term">
+<span class="c">$</span> curl -D - -o /dev/null https://meeting-card-scheduler.vercel.app/<br>
+<span class="p">HTTP/2 200</span><br>
+content-security-policy: default-src 'self'; script-src 'self' <span class="u">'nonce-…'</span> <span class="u">'wasm-unsafe-eval'</span>; connect-src 'self' <span class="u">data:</span>; frame-ancestors 'none'<br>
+strict-transport-security: max-age=31536000; includeSubDomains<br>
+x-frame-options: DENY<br>
+server: Vercel<br>
+<br>
+<span class="c">→ both CSP fixes confirmed live under Vercel's real edge runtime, not just a local build</span><br>
+<span class="c">→ full value-stream smoke test (create → agenda → attendees → preview → export → clear data): </span><span class="p">PASS</span>
+    </div>
+  </div>
+</section>
+
+<section id="outstanding">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow">06 · What's left</p>
+      <h2>One manual step, one open enhancement</h2>
+    </div>
+    <div class="checklist">
+      <div class="check open">
+        <span class="box">!</span>
+        <span class="tx"><b>Connect the Vercel GitHub App.</b> Vercel Dashboard → Project → Settings → Git → Connect Git Repository, authorized from a GitHub account with admin access to <code>Mozahad1563/meeting-scheduler</code>. Until this runs once, pushes to <code>main</code> don't auto-deploy and PRs don't get preview URLs — every deploy needs a manual <code>vercel --prod</code>.</span>
+      </div>
+      <div class="check open">
+        <span class="box">!</span>
+        <span class="tx"><b>Turn on branch protection.</b> Require the four <code>ci.yml</code> checks (<code>gitleaks</code>, <code>lint-typecheck-test</code>, <code>codeql</code>, <code>dependency-audit</code>) as status checks on <code>main</code> — the workflow files exist and pass, but nothing yet blocks a merge on their failure.</span>
+      </div>
+      <div class="check open">
+        <span class="box">!</span>
+        <span class="tx"><b>Accessibility checks (axe-core) aren't wired into CI yet.</b> Affirmed as a non-blocking signal at practices discovery, not yet added as a job.</span>
+      </div>
+      <div class="check done">
+        <span class="box">✓</span>
+        <span class="tx"><b>Everything else in scope shipped:</b> scheduling, agenda builder, attendee management, live preview, PDF/QR export, browser-only persistence, the 80% coverage floor (actual 93.7%), the 5-browser E2E matrix, and a production deployment verified end-to-end.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="fline">
+      <span>Meeting Scheduler &amp; Invitation Card Generator — build journey report</span>
+      <span>AI-DLC intent <code>260917-meeting-card-scheduler</code></span>
+    </div>
+  </div>
+</footer>
