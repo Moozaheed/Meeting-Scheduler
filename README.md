@@ -1,9 +1,10 @@
 # Meeting Card Scheduler
 
 Schedule a meeting, build its agenda, manage attendees, and generate a
-polished invitation-card PDF (with a QR code) — all without a backend.
-Every meeting, agenda item, and attendee lives only in your own browser's
-storage; nothing is sent to a server or a third-party API.
+polished invitation-card PDF (with a QR code). Meetings, agenda items, and
+attendees are stored in a shared Supabase Postgres database — visible to
+anyone with the app's link, no login — and nothing else: no third-party
+APIs, no other backend services.
 
 ## Prerequisites
 
@@ -35,8 +36,16 @@ Open http://localhost:3000.
 
 ## Environment variables
 
-None required. See `.env.example` — this app has zero runtime secrets by
-design (no third-party APIs, no server-side database).
+Two required — a public Supabase project URL and its publishable
+(client-safe) key. See `.env.example`. No other runtime secrets exist: no
+third-party APIs, no server-side code of any kind (the Supabase client
+runs directly in the browser, gated by Row Level Security policies, not by
+a backend this app owns).
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<publishable key, safe to expose client-side>
+```
 
 ## Architecture
 
@@ -44,8 +53,9 @@ Four layers (see `lib/`), enforced by lint rule as well as convention —
 UI components never call storage or the PDF/QR engine directly:
 
 - `types/` — `Meeting`, `AgendaItem`, `Attendee` domain types.
-- `lib/persistence/` — the `PersistenceAdapter`, an IndexedDB-backed
-  (`idb-keyval`) save/load/list/delete/clear interface.
+- `lib/persistence/` — the `PersistenceAdapter`, a Supabase Postgres-backed
+  save/load/list/delete/clear interface (`lib/persistence/supabase-client.ts`
+  holds the only code in the repo that imports `@supabase/supabase-js`).
 - `lib/store/` — `Scheduling`, the domain/state layer and its React hooks
   (`useMeetingsList`, `useMeeting`, `useAgendaItems`, `useAttendees`,
   `useClearAllData`). The **only** module allowed to call
@@ -56,12 +66,32 @@ UI components never call storage or the PDF/QR engine directly:
 
 ## Data & privacy
 
-Your data stays on this device only, in plain browser storage — it is
-**not encrypted**. Don't use this app for sensitive meetings on a shared
-computer. Use the "Clear my data" action (visible on the Meetings List) to
-wipe everything stored in this browser at any time.
+Meetings live in a shared Supabase database, not per-device browser
+storage — anyone with the app's link can see every meeting, agenda item,
+and attendee. There is no login. Don't use this app for sensitive or
+private meetings. Row Level Security is enabled on every table, but its
+policies currently grant the anonymous role full read/write access, matching
+this app's original no-auth design — see
+`supabase/migrations/20260922041800_init.sql` for the exact policies.
+
+The "Clear my data" action (visible on the Meetings List) deletes every
+meeting this device has created or edited — tracked via a small anonymous
+id list in `localStorage` (`lib/persistence/owned-meetings.ts`), not a wipe
+of the whole shared database.
+
+## Database schema & migrations
+
+Managed with the Supabase CLI. `supabase/migrations/` is the source of
+truth; apply it to a project with:
+
+```bash
+npx supabase link --project-ref <project-ref>
+npx supabase db push
+```
 
 ## Deployment
 
 Deploys to Vercel on every merge to `main` (no separate staging tier — see
-the project's `team.md` Deployment section for the full rationale).
+the project's `team.md` Deployment section for the full rationale). Set
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the
+Vercel project's Environment Variables for both Production and Preview.

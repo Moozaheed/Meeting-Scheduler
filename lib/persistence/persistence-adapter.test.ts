@@ -1,23 +1,13 @@
-import * as idbKeyval from 'idb-keyval';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PersistenceAdapter, PersistenceError } from '@/lib/persistence/persistence-adapter';
+import * as supabaseClient from '@/lib/persistence/supabase-client';
 import { buildMeetingRecord } from '@/lib/store/test-fixtures';
-
-vi.mock('idb-keyval', async (importOriginal) => {
-  const actual = await importOriginal<typeof idbKeyval>();
-  return {
-    ...actual,
-    set: vi.fn(actual.set),
-    get: vi.fn(actual.get),
-  };
-});
 
 describe('PersistenceAdapter', () => {
   beforeEach(async () => {
-    // idb-keyval memoizes its database connection on first use, so
-    // per-test isolation is achieved with a real clear rather than by
-    // swapping out the global `indexedDB` (see vitest.setup.ts).
+    // Per-test isolation against the in-memory fake Supabase client
+    // (see lib/persistence/__mocks__/supabase-client.ts, vitest.setup.ts).
     await PersistenceAdapter.clearAll();
   });
 
@@ -71,17 +61,8 @@ describe('PersistenceAdapter', () => {
     expect(await PersistenceAdapter.list()).toEqual([]);
   });
 
-  it('throws a quota-exceeded PersistenceError when the underlying store rejects with QuotaExceededError', async () => {
-    vi.mocked(idbKeyval.set).mockRejectedValueOnce(new DOMException('quota exceeded', 'QuotaExceededError'));
-
-    const attempt = PersistenceAdapter.save(buildMeetingRecord());
-
-    await expect(attempt).rejects.toBeInstanceOf(PersistenceError);
-    await expect(attempt.catch((e) => e)).resolves.toMatchObject({ code: 'quota-exceeded' });
-  });
-
-  it('throws a storage-unavailable PersistenceError on a private-browsing-style restriction', async () => {
-    vi.mocked(idbKeyval.set).mockRejectedValueOnce(new DOMException('restricted', 'SecurityError'));
+  it('throws a storage-unavailable PersistenceError when the database is unreachable (offline)', async () => {
+    vi.spyOn(supabaseClient, 'upsertMeetingRecord').mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
     const attempt = PersistenceAdapter.save(buildMeetingRecord());
 
@@ -90,7 +71,7 @@ describe('PersistenceAdapter', () => {
   });
 
   it('throws a corrupted-data PersistenceError when a stored value does not match the expected shape', async () => {
-    vi.mocked(idbKeyval.get).mockResolvedValueOnce({ not: 'a meeting record' });
+    vi.spyOn(supabaseClient, 'selectMeetingRecord').mockResolvedValueOnce({ not: 'a meeting record' } as never);
 
     const attempt = PersistenceAdapter.load('some-id');
 

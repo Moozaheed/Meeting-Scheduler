@@ -222,7 +222,7 @@ export function MeetingDetailsForm({ draft, errors, onFieldChange, onFieldBlur }
           data-testid="host-email-input"
         />
         <FieldError id="host-email-error" message={errors.hostEmail} />
-        <p className="mt-1 text-xs text-gray-500">Stored only on this device.</p>
+        <p className="mt-1 text-xs text-gray-500">Visible to anyone with the link to this app.</p>
       </div>
     </fieldset>
   );

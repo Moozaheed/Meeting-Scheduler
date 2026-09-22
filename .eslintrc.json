@@ -41,7 +41,7 @@
           {
             "patterns": [
               {
-                "group": ["idb-keyval", "**/lib/persistence/*", "@/lib/persistence/*"],
+                "group": ["@supabase/supabase-js", "**/lib/persistence/*", "@/lib/persistence/*"],
                 "message": "UI components must never call the persistence layer directly — go through lib/store (Scheduling)."
               },
               {

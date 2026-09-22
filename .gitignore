@@ -104,3 +104,5 @@ aidlc/diagnostics/
 *.tsbuildinfo
 next-env.d.ts
 # END meeting-card-scheduler:gitignore
+.vercel
+supabase/.temp/
