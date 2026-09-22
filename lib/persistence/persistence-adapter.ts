@@ -57,7 +57,15 @@ function toPersistenceError(error: unknown, fallbackMessage: string): Persistenc
     });
   }
 
-  return new PersistenceError('unknown', fallbackMessage, { cause: error });
+  // Include the real underlying message rather than only the generic
+  // fallback — none of the errors reaching this branch (a Postgres/
+  // PostgREST error object, or getClient()'s own "must be set" check) carry
+  // sensitive detail, and burying the actual cause behind a fixed string
+  // made a real production failure much harder to diagnose than it needed
+  // to be (this branch's context was lost until traced back through a raw
+  // network capture).
+  const detail = error instanceof Error ? error.message : String(error);
+  return new PersistenceError('unknown', `${fallbackMessage} (${detail})`, { cause: error });
 }
 
 /** Runtime shape-check for data read back from storage — guards against corrupted/malformed records (NFR4.1). */
