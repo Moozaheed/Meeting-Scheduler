@@ -77,13 +77,19 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: [lint-typecheck-test]
+    # The two values below live in the repo's "Keys" GitHub Environment —
+    # a job only gets access to an Environment's secrets/variables once it
+    # names that environment here; without this line both resolve empty
+    # even though they're set (found via a real CI run: the job's own env
+    # block printed both as blank).
+    environment: Keys
     env:
       # Client-safe, public values (README.md "Environment variables") —
       # meant to be embedded in the browser bundle, so repository
-      # Variables is the correct place for them (unlike a real secret).
-      # Read from either `vars` or `secrets` here, since both work
-      # functionally and a first-time setup easily lands them under the
-      # wrong tab (they're both on the same GitHub settings page).
+      # Variables is the more conventional place for them (unlike a real
+      # secret), but they work the same functionally from Environment
+      # secrets — read from either `vars` or `secrets` so this isn't
+      # sensitive to which of the two a first-time setup used.
       # playwright.config.ts's webServer runs `npm run build && npm run
       # start`, which needs these at build time to talk to the real
       # Supabase project.
