@@ -18,6 +18,7 @@ import type { NextRequest } from 'next/server';
  */
 export function proxy(request: NextRequest) {
   const nonce = generateNonce();
+  const supabaseOrigin = supabaseOriginFromEnv();
 
   const cspHeader = [
     `default-src 'self'`,
@@ -35,7 +36,12 @@ export function proxy(request: NextRequest) {
     // 'data:' is required alongside 'wasm-unsafe-eval' above: the browser
     // loads @react-pdf/renderer's WASM module from a same-page data: URI,
     // which counts as a fetch/connect target, not a script-src concern.
-    `connect-src 'self' data:`,
+    // The Supabase project origin is required for every read/write the
+    // client makes (lib/persistence/supabase-client.ts) — without it the
+    // browser silently blocks the fetch as a CSP violation (found the same
+    // way the two entries above were: a real E2E run against the live
+    // deployment hanging on "Loading your meetings…" with no thrown error).
+    `connect-src 'self' data:${supabaseOrigin ? ` ${supabaseOrigin}` : ''}`,
     `frame-ancestors 'none'`,
   ].join('; ');
 
@@ -55,6 +61,17 @@ function generateNonce(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   return btoa(String.fromCharCode(...bytes));
+}
+
+/** Returns just the origin (e.g. "https://xyz.supabase.co") from NEXT_PUBLIC_SUPABASE_URL, or undefined if unset/malformed — never throws, so a missing env var degrades to a stricter CSP rather than crashing every request. */
+function supabaseOriginFromEnv(): string | undefined {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return undefined;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return undefined;
+  }
 }
 
 export const config = {
