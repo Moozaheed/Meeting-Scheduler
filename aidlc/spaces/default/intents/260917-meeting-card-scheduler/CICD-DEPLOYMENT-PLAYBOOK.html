@@ -1,0 +1,393 @@
+<title>CI/CD Deployment Playbook</title>
+<meta name="description" content="The standard, production-grade CI/CD pipeline for a SaaS or any serious project — 6 phases, 27 concrete steps, with real tool names at every stage and a comparison against what this project actually runs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#f4f6f6; --surface:#ffffff; --surface-sunken:#edf1f1;
+    --ink:#12191a; --ink-soft:#48575a; --ink-faint:#7c8b8e;
+    --line:#dde5e5; --line-strong:#c2cdcd;
+    --accent:#0e7f72; --accent-ink:#075f55; --accent-soft:#dcf3ef;
+    --gate:#8a5a00; --gate-soft:#fbf0d8;
+    --crit:#a3271f; --crit-soft:#fbe8e6;
+    --good:#1b7a4d; --good-soft:#e1f4ea;
+    --shadow: 0 1px 2px rgba(18,25,26,.05), 0 10px 26px -14px rgba(18,25,26,.18);
+    --font-display:'Archivo', ui-sans-serif, system-ui, sans-serif;
+    --font-body:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b0f0f; --surface:#131a1a; --surface-sunken:#0f1515;
+      --ink:#e7eeee; --ink-soft:#a3b3b4; --ink-faint:#697979;
+      --line:#223030; --line-strong:#2e3f3f;
+      --accent:#4fd6c4; --accent-ink:#8ef0e2; --accent-soft:#0f2f2a;
+      --gate:#f0c05a; --gate-soft:#392c0c;
+      --crit:#f0897c; --crit-soft:#3a1a16;
+      --good:#5fd699; --good-soft:#0f3323;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 14px 30px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b0f0f; --surface:#131a1a; --surface-sunken:#0f1515;
+    --ink:#e7eeee; --ink-soft:#a3b3b4; --ink-faint:#697979;
+    --line:#223030; --line-strong:#2e3f3f;
+    --accent:#4fd6c4; --accent-ink:#8ef0e2; --accent-soft:#0f2f2a;
+    --gate:#f0c05a; --gate-soft:#392c0c;
+    --crit:#f0897c; --crit-soft:#3a1a16;
+    --good:#5fd699; --good-soft:#0f3323;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 14px 30px -16px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  ::selection{ background:var(--accent-soft); color:var(--accent-ink); }
+  a{ color:var(--accent-ink); text-decoration-color:var(--line-strong); text-underline-offset:3px; }
+  a:hover{ text-decoration-color:currentColor; }
+  a:focus-visible, summary:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:2px; }
+  h1,h2,h3,h4{ font-family:var(--font-display); font-weight:700; text-wrap:balance; margin:0; color:var(--ink); }
+  code{ font-family:var(--font-mono); }
+  .container{ max-width:880px; margin:0 auto; padding:0 24px; }
+  .eyebrow{ font-family:var(--font-mono); font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; font-weight:500; }
+
+  .topbar{ position:sticky; top:0; z-index:30; background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .topbar-inner{ display:flex; align-items:center; gap:16px; padding:11px 24px; max-width:880px; margin:0 auto; overflow-x:auto; }
+  .topbar a{ font-family:var(--font-mono); font-size:12.5px; color:var(--ink-soft); white-space:nowrap; }
+  .topbar a:hover{ color:var(--accent-ink); }
+  .topbar .brand{ font-weight:700; color:var(--ink); margin-right:4px; white-space:nowrap; font-family:var(--font-display); }
+
+  .hero{ padding:52px 0 34px; }
+  .hero h1{ font-size:clamp(30px,4.4vw,44px); line-height:1.08; max-width:15ch; }
+  .hero .dek{ margin-top:14px; max-width:64ch; font-size:17.5px; color:var(--ink-soft); }
+  .stats{ display:flex; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-top:24px; max-width:560px; }
+  .stat{ flex:1; background:var(--surface); padding:14px 16px; }
+  .stat .n{ font-family:var(--font-mono); font-size:24px; font-weight:600; }
+  .stat .l{ margin-top:2px; font-size:11.5px; color:var(--ink-faint); }
+
+  section{ padding:44px 0; border-top:1px solid var(--line); }
+  section > .container > .shead{ margin-bottom:24px; }
+  .shead h2{ font-size:25px; }
+  .shead .phaseno{ font-family:var(--font-mono); font-size:13px; color:var(--accent-ink); font-weight:600; }
+  .shead p{ margin-top:8px; max-width:66ch; color:var(--ink-soft); font-size:15px; }
+
+  .step{ display:grid; grid-template-columns:44px 1fr; gap:16px; padding:16px 0; border-bottom:1px solid var(--line); }
+  .step:last-child{ border-bottom:none; }
+  .step-num{ width:36px; height:36px; border-radius:9px; background:var(--surface-sunken); border:1px solid var(--line-strong); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:13.5px; font-weight:600; color:var(--ink-soft); flex:none; }
+  .step-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .step-head h4{ font-size:15.5px; }
+  .step p{ margin:5px 0 0; font-size:14px; color:var(--ink-soft); max-width:62ch; }
+  .step .tools{ margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+  .tool{ font-family:var(--font-mono); font-size:11.5px; padding:3px 8px; border-radius:6px; background:var(--surface-sunken); border:1px solid var(--line); color:var(--ink-soft); }
+  .tag{ font-family:var(--font-mono); font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:99px; white-space:nowrap; text-transform:uppercase; letter-spacing:.02em; }
+  .tag.block{ background:var(--crit-soft); color:var(--crit); }
+  .tag.gate{ background:var(--gate-soft); color:var(--gate); }
+  .tag.auto{ background:var(--accent-soft); color:var(--accent-ink); }
+  .tag.optional{ background:var(--surface-sunken); color:var(--ink-faint); border:1px solid var(--line); }
+
+  .phase-block{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:8px 20px; box-shadow:var(--shadow); margin-top:8px; }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:14px; margin-top:16px; font-size:12.5px; color:var(--ink-faint); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend .sw{ width:10px; height:10px; border-radius:3px; }
+
+  .compare{ margin-top:10px; }
+  .compare-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .compare-table th{ text-align:left; font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; padding:0 12px 8px; border-bottom:1px solid var(--line-strong); }
+  .compare-table td{ padding:9px 12px; border-bottom:1px solid var(--line); color:var(--ink-soft); vertical-align:top; }
+  .compare-table tr:last-child td{ border-bottom:none; }
+  .compare-table td.step-name{ color:var(--ink); font-weight:600; white-space:nowrap; }
+  .have{ color:var(--good); font-weight:700; }
+  .missing{ color:var(--ink-faint); }
+  .table-wrap{ overflow-x:auto; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:4px 8px; box-shadow:var(--shadow); }
+
+  footer{ padding:36px 0 60px; }
+  footer .fline{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; font-family:var(--font-mono); font-size:12px; color:var(--ink-faint); padding-top:20px; border-top:1px solid var(--line); }
+  @media (max-width:640px){ .container{ padding:0 18px; } .hero{ padding:38px 0 26px; } .step{ grid-template-columns:34px 1fr; } }
+</style>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="brand">Playbook</span>
+    <a href="#a">A · Local</a>
+    <a href="#b">B · CI</a>
+    <a href="#c">C · Release prep</a>
+    <a href="#d">D · Staging</a>
+    <a href="#e">E · Production</a>
+    <a href="#f">F · Post-deploy</a>
+    <a href="#compare">This project</a>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="container">
+    <p class="eyebrow" style="color:var(--accent-ink)">Reference playbook</p>
+    <h1 style="margin-top:10px">The standard CI/CD pipeline, start to finish</h1>
+    <p class="dek">Six phases, 27 concrete steps — from a pre-commit hook on your own machine to a bake-time monitor after production traffic hits the new build. Not every project needs all 27; the comparison at the bottom shows exactly which ones this project has and which a bigger SaaS would add.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">6</div><div class="l">phases</div></div>
+      <div class="stat"><div class="n">27</div><div class="l">steps</div></div>
+      <div class="stat"><div class="n">4</div><div class="l">hard gates</div></div>
+    </div>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--crit)"></span>blocking — fails the pipeline</span>
+      <span><span class="sw" style="background:var(--gate)"></span>gate — needs a human decision</span>
+      <span><span class="sw" style="background:var(--accent)"></span>automatic — no human involved</span>
+      <span><span class="sw" style="background:var(--ink-faint)"></span>optional — add when it earns its cost</span>
+    </div>
+  </div>
+</header>
+
+<section id="a">
+  <div class="container">
+    <div class="shead">
+      <p class="phaseno">PHASE A</p>
+      <h2>Before code leaves your machine</h2>
+      <p>The cheapest place to catch a mistake is before it's ever pushed. One step, but it saves everyone downstream real time.</p>
+    </div>
+    <div class="phase-block">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-head"><h4>Pre-commit hooks</h4><span class="tag block">blocking</span></div>
+          <p>Runs locally on <code>git commit</code>: lint, formatter check, and a fast secret scan. Catches the embarrassing stuff before it's even proposed.</p>
+          <div class="tools"><span class="tool">Husky</span><span class="tool">lint-staged</span><span class="tool">gitleaks protect</span><span class="tool">pre-commit</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="b">
+  <div class="container">
+    <div class="shead">
+      <p class="phaseno">PHASE B</p>
+      <h2>Continuous Integration — every pull request</h2>
+      <p>Everything here runs automatically the moment a PR opens or updates. This is where "vulnerability check" and "secret check" actually live for most teams.</p>
+    </div>
+    <div class="phase-block">
+      <div class="step"><div class="step-num">2</div><div>
+        <div class="step-head"><h4>Checkout + install dependencies</h4><span class="tag auto">automatic</span></div>
+        <p>Cached so it's fast on every run — this is the baseline every other step depends on.</p>
+        <div class="tools"><span class="tool">actions/checkout</span><span class="tool">actions/setup-node</span><span class="tool">npm ci</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">3</div><div>
+        <div class="step-head"><h4>Lint / static style analysis</h4><span class="tag block">blocking</span></div>
+        <p>Catches style violations and common bug patterns (unused vars, unsafe equality, etc.) before a human ever looks at the diff.</p>
+        <div class="tools"><span class="tool">ESLint</span><span class="tool">Ruff</span><span class="tool">golangci-lint</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">4</div><div>
+        <div class="step-head"><h4>Type check</h4><span class="tag block">blocking</span></div>
+        <p>For a typed language, a clean type-check is cheap insurance against a whole category of runtime bugs.</p>
+        <div class="tools"><span class="tool">tsc --noEmit</span><span class="tool">mypy</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">5</div><div>
+        <div class="step-head"><h4>Unit / component tests + coverage floor</h4><span class="tag block">blocking</span></div>
+        <p>The core correctness gate. A coverage floor (commonly 70–85%) stops it from silently eroding over time.</p>
+        <div class="tools"><span class="tool">Vitest</span><span class="tool">Jest</span><span class="tool">pytest</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">6</div><div>
+        <div class="step-head"><h4>Secret scanning</h4><span class="tag block">blocking</span></div>
+        <p>Scans the PR diff for API keys, passwords, and tokens. Independent of the pre-commit hook — catches what a contributor's local hook wasn't installed to catch.</p>
+        <div class="tools"><span class="tool">Gitleaks</span><span class="tool">TruffleHog</span><span class="tool">GitHub secret scanning</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">7</div><div>
+        <div class="step-head"><h4>SAST — static application security testing</h4><span class="tag block">blocking (Critical/High)</span></div>
+        <p>Scans your own source for vulnerability patterns — injection risk, unsafe deserialization, path traversal — without running the code.</p>
+        <div class="tools"><span class="tool">CodeQL</span><span class="tool">Semgrep</span><span class="tool">Snyk Code</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">8</div><div>
+        <div class="step-head"><h4>Dependency vulnerability scan</h4><span class="tag block">blocking (Critical/High)</span></div>
+        <p>Checks every package you depend on against known-CVE databases. This is the single highest-value check for most apps — most real vulnerabilities ship in via a dependency, not your own code.</p>
+        <div class="tools"><span class="tool">npm audit</span><span class="tool">Snyk</span><span class="tool">Dependabot alerts</span><span class="tool">pip-audit</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">9</div><div>
+        <div class="step-head"><h4>License compliance scan</h4><span class="tag optional">optional</span></div>
+        <p>For a SaaS you intend to sell or keep closed-source, checks that no dependency's license (GPL, AGPL) legally obligates you to open-source your own code.</p>
+        <div class="tools"><span class="tool">FOSSA</span><span class="tool">license-checker</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">10</div><div>
+        <div class="step-head"><h4>Build verification</h4><span class="tag block">blocking</span></div>
+        <p>Does the production build actually succeed? Cheap to run, and it catches "works in dev, breaks in build" every single time.</p>
+        <div class="tools"><span class="tool">next build</span><span class="tool">webpack</span><span class="tool">docker build</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">11</div><div>
+        <div class="step-head"><h4>Integration tests</h4><span class="tag block">blocking</span></div>
+        <p>Tests real boundaries — a real (ephemeral) database, a real queue — instead of mocks. Usually the slowest CI step, so it's worth isolating from the fast unit-test loop.</p>
+        <div class="tools"><span class="tool">Testcontainers</span><span class="tool">docker-compose in CI</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">12</div><div>
+        <div class="step-head"><h4>Container image build + scan</h4><span class="tag optional">optional — if containerized</span></div>
+        <p>Builds the actual image you'll ship and scans its OS-level packages for known vulnerabilities, not just your app dependencies.</p>
+        <div class="tools"><span class="tool">Trivy</span><span class="tool">Grype</span><span class="tool">Docker Scout</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">13</div><div>
+        <div class="step-head"><h4>Infrastructure-as-Code validation</h4><span class="tag optional">optional — if using IaC</span></div>
+        <p>Lints and security-scans your Terraform/CDK/CloudFormation before it's ever applied — catches an open security group before it's live, not after.</p>
+        <div class="tools"><span class="tool">checkov</span><span class="tool">tfsec</span><span class="tool">cfn-lint</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">14</div><div>
+        <div class="step-head"><h4>Human code review + required approvals</h4><span class="tag gate">gate</span></div>
+        <p>Branch protection makes every check above a required status — nothing merges with a red check, and at least one human has to actually approve the diff.</p>
+        <div class="tools"><span class="tool">GitHub branch protection</span><span class="tool">CODEOWNERS</span></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="c">
+  <div class="container">
+    <div class="shead">
+      <p class="phaseno">PHASE C</p>
+      <h2>Merge &amp; release prep</h2>
+      <p>What happens the moment code lands on <code>main</code> — turning a commit into a releasable, traceable artifact.</p>
+    </div>
+    <div class="phase-block">
+      <div class="step"><div class="step-num">15</div><div>
+        <div class="step-head"><h4>Merge, auto-tag, changelog</h4><span class="tag auto">automatic</span></div>
+        <p>Squash-merge keeps history linear; a version bump and changelog entry get generated from the commit messages, not written by hand.</p>
+        <div class="tools"><span class="tool">semantic-release</span><span class="tool">Conventional Commits</span><span class="tool">Changesets</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">16</div><div>
+        <div class="step-head"><h4>Build the release artifact, generate an SBOM, sign it</h4><span class="tag auto">automatic</span></div>
+        <p>One immutable, versioned build — a container image, a compiled binary, a static bundle — pushed to a registry. The SBOM (Software Bill of Materials) and signature are what let you prove, months later, exactly what shipped and that it wasn't tampered with.</p>
+        <div class="tools"><span class="tool">Docker registry</span><span class="tool">cosign</span><span class="tool">syft</span></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="d">
+  <div class="container">
+    <div class="shead">
+      <p class="phaseno">PHASE D</p>
+      <h2>Deploy to staging / preview</h2>
+      <p>The dress rehearsal — verify the exact artifact that will go to production, in an environment that behaves like production.</p>
+    </div>
+    <div class="phase-block">
+      <div class="step"><div class="step-num">17</div><div>
+        <div class="step-head"><h4>Auto-deploy to staging</h4><span class="tag auto">automatic</span></div>
+        <p>No human step — every merge (or every PR, for preview environments) gets its own live URL automatically.</p>
+        <div class="tools"><span class="tool">Vercel Preview</span><span class="tool">Kubernetes namespace per PR</span><span class="tool">Heroku Review Apps</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">18</div><div>
+        <div class="step-head"><h4>E2E / smoke tests against staging</h4><span class="tag block">blocking (to promote)</span></div>
+        <p>Real browser, real network calls, the full user journey — this is what catches the bugs unit tests structurally cannot see (a misconfigured CSP header, a broken third-party integration).</p>
+        <div class="tools"><span class="tool">Playwright</span><span class="tool">Cypress</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">19</div><div>
+        <div class="step-head"><h4>Performance tests + DAST</h4><span class="tag optional">optional, blocking if run</span></div>
+        <p>Load-tests key endpoints against real latency/throughput budgets, and DAST attacks the running app the way a real attacker would — different from SAST, which only reads source.</p>
+        <div class="tools"><span class="tool">k6</span><span class="tool">Lighthouse CI</span><span class="tool">OWASP ZAP</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">20</div><div>
+        <div class="step-head"><h4>Accessibility + visual regression</h4><span class="tag optional">optional, usually non-blocking</span></div>
+        <p>Automated a11y scanning and screenshot-diffing against the last known-good UI — cheap signal, rarely worth blocking a release over.</p>
+        <div class="tools"><span class="tool">axe-core</span><span class="tool">pa11y</span><span class="tool">Percy</span><span class="tool">Chromatic</span></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="e">
+  <div class="container">
+    <div class="shead">
+      <p class="phaseno">PHASE E</p>
+      <h2>Production release</h2>
+      <p>The highest-stakes phase — everything here is designed around one question: how do we ship without a bad deploy taking users down?</p>
+    </div>
+    <div class="phase-block">
+      <div class="step"><div class="step-num">21</div><div>
+        <div class="step-head"><h4>Manual approval gate</h4><span class="tag gate">gate — or skip if CD-mature</span></div>
+        <p>A named person clicks "promote." Teams with strong test coverage and observability sometimes graduate to skipping this — every merge auto-deploys to prod — but that's a deliberate, earned decision, not a default.</p>
+        <div class="tools"><span class="tool">GitHub Environments (required reviewers)</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">22</div><div>
+        <div class="step-head"><h4>Database migrations</h4><span class="tag block">blocking, handle with care</span></div>
+        <p>The single riskiest step in the whole pipeline. Migrations must be backward-compatible with the <em>currently running</em> code (additive columns, never a rename-and-drop in one step) because old and new code run side-by-side during a rolling deploy.</p>
+        <div class="tools"><span class="tool">Prisma Migrate</span><span class="tool">Flyway</span><span class="tool">Alembic</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">23</div><div>
+        <div class="step-head"><h4>Deploy via the chosen release strategy</h4><span class="tag auto">automatic</span></div>
+        <p>Rolling (replace instances gradually), blue/green (switch traffic to a fully-new fleet at once), or canary (send 5% of traffic first, watch, then ramp) — the choice depends on your traffic volume and risk tolerance, not a universal default. Feature flags decouple "deployed" from "visible to users," so a risky change can go out dark.</p>
+        <div class="tools"><span class="tool">Kubernetes rolling update</span><span class="tool">AWS CodeDeploy blue/green</span><span class="tool">LaunchDarkly</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">24</div><div>
+        <div class="step-head"><h4>Automated health checks + rollback trigger</h4><span class="tag block">blocking</span></div>
+        <p>The deploy tool itself watches readiness/liveness probes and error rates immediately after cutover — if they fail, it rolls back automatically, before a human even notices.</p>
+        <div class="tools"><span class="tool">Kubernetes probes</span><span class="tool">Vercel instant rollback</span><span class="tool">AWS CodeDeploy alarms</span></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="f">
+  <div class="container">
+    <div class="shead">
+      <p class="phaseno">PHASE F</p>
+      <h2>Post-deploy</h2>
+      <p>Shipping isn't the finish line — this is what makes sure it actually worked.</p>
+    </div>
+    <div class="phase-block">
+      <div class="step"><div class="step-num">25</div><div>
+        <div class="step-head"><h4>Production smoke test</h4><span class="tag block">blocking</span></div>
+        <p>The same value-stream check that ran against staging, run one more time against the real, live production URL.</p>
+        <div class="tools"><span class="tool">Playwright</span><span class="tool">synthetic monitoring</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">26</div><div>
+        <div class="step-head"><h4>Bake-time monitoring</h4><span class="tag gate">gate — human watches a window</span></div>
+        <p>Watch error rate, latency, and key business metrics for a defined window (commonly 15–60 minutes) before calling the release "done." This is where a canary strategy earns its keep — a spike here aborts the rollout before it reaches 100% of traffic.</p>
+        <div class="tools"><span class="tool">Datadog</span><span class="tool">Sentry</span><span class="tool">CloudWatch Alarms</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">27</div><div>
+        <div class="step-head"><h4>Team notification</h4><span class="tag auto">automatic</span></div>
+        <p>Who shipped what, when, and whether it's green — so the team has a shared, searchable record without anyone typing it up by hand.</p>
+        <div class="tools"><span class="tool">Slack webhook</span><span class="tool">GitHub Deployments API</span></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow" style="color:var(--ink-faint)">Grounded in something real</p>
+      <h2>What this project actually has, against the full 27</h2>
+      <p>This project is a solo-built, no-auth, client-only app — the right amount of process for it is nowhere near all 27 steps, and that's a correct engineering call, not a shortcut. The gap column is exactly what you'd add first when this kind of project grows into a multi-user SaaS with real infrastructure behind it.</p>
+    </div>
+    <div class="table-wrap">
+      <table class="compare-table">
+        <thead><tr><th>Step</th><th>This project</th><th>What a production SaaS adds</th></tr></thead>
+        <tbody>
+          <tr><td class="step-name">1 · Pre-commit hooks</td><td class="missing">Not configured</td><td>Husky + lint-staged, cheap to add anytime</td></tr>
+          <tr><td class="step-name">3–5 · Lint, type check, tests</td><td class="have">✓ all three, 80% coverage floor</td><td>—</td></tr>
+          <tr><td class="step-name">6 · Secret scanning</td><td class="have">✓ Gitleaks</td><td>—</td></tr>
+          <tr><td class="step-name">7 · SAST</td><td class="have">✓ CodeQL</td><td>—</td></tr>
+          <tr><td class="step-name">8 · Dependency scan</td><td class="have">✓ npm audit + Dependabot</td><td>—</td></tr>
+          <tr><td class="step-name">9 · License compliance</td><td class="missing">Not needed — not selling the code</td><td>Add before any commercial license terms</td></tr>
+          <tr><td class="step-name">10–11 · Build, integration tests</td><td class="have">✓ build verified; integration = the E2E layer</td><td>—</td></tr>
+          <tr><td class="step-name">12–13 · Container/IaC scan</td><td class="missing">N/A — no containers, no IaC</td><td>Needed the moment you provision real cloud infra</td></tr>
+          <tr><td class="step-name">14 · Required reviews</td><td class="missing">Not configured (solo project)</td><td>Branch protection + CODEOWNERS with a real team</td></tr>
+          <tr><td class="step-name">15–16 · Versioning, SBOM, signing</td><td class="missing">Not configured</td><td>Matters once you have external customers relying on version pinning</td></tr>
+          <tr><td class="step-name">17 · Staging auto-deploy</td><td class="missing">No staging tier — deploy-on-merge goes straight to the one environment</td><td>Add a staging tier once a bad deploy has real user impact</td></tr>
+          <tr><td class="step-name">18 · E2E smoke</td><td class="have">✓ full Playwright suite (run manually — see below)</td><td>Wire back into CI once secrets are stable</td></tr>
+          <tr><td class="step-name">19–20 · Perf/DAST/a11y/visual</td><td class="missing">a11y checklist exists, not automated</td><td>Add k6 + ZAP once traffic/attack-surface justify it</td></tr>
+          <tr><td class="step-name">21 · Manual approval gate</td><td class="missing">None — deploy-on-merge by design</td><td>Add once a bad deploy is expensive to undo</td></tr>
+          <tr><td class="step-name">22 · DB migrations</td><td class="missing">Manual, deliberately — see the Supabase Q&amp;A earlier</td><td>Automate once schema changes are frequent</td></tr>
+          <tr><td class="step-name">23–24 · Release strategy, health checks</td><td class="missing">Vercel's default recreate-on-deploy; no canary</td><td>Canary/blue-green once traffic volume justifies the complexity</td></tr>
+          <tr><td class="step-name">25 · Production smoke test</td><td class="have">✓ run manually after each deploy this session</td><td>Automate into the pipeline itself</td></tr>
+          <tr><td class="step-name">26–27 · Bake-time monitoring, notifications</td><td class="missing">No monitoring wired up beyond Vercel's own dashboard</td><td>Sentry/Datadog + a Slack webhook — usually the next thing worth adding</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:16px; font-size:14px; color:var(--ink-soft); max-width:66ch">The honest read: 9 of 27 steps are live and doing real work right now. The rest aren't missing by accident — they're the right next additions in roughly the order a real SaaS would need them, not a checklist to rush through at once.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="fline">
+      <span>CI/CD deployment playbook</span>
+      <span>Reference guide — not tied to any one project</span>
+    </div>
+  </div>
+</footer>
