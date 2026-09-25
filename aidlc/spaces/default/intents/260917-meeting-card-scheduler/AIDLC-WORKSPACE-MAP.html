@@ -1,0 +1,763 @@
+<title>AI-DLC Workspace Map</title>
+<meta name="description" content="What every folder and file under .claude/ and aidlc/ actually does — the framework engine versus this project's own record, walked through with real paths from this repo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,420;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#f4f5f7; --surface:#ffffff; --surface-sunken:#eceef2;
+    --ink:#14181f; --ink-soft:#4c5563; --ink-faint:#838d9c;
+    --line:#dfe2e8; --line-strong:#c7ccd4;
+    --fw:#4652d1; --fw-ink:#3038a8; --fw-soft:#e8e9fb;      /* framework accent (.claude/) */
+    --ws:#a15c00; --ws-ink:#7c4700; --ws-soft:#f6ead2;      /* workspace accent (aidlc/) */
+    --good:#1b7a4d; --good-soft:#e1f4ea;
+    --gate:#8a5a00; --gate-soft:#fbf0d8;
+    --shadow: 0 1px 2px rgba(20,24,31,.04), 0 10px 26px -14px rgba(20,24,31,.16);
+    --font-display:'Source Serif 4', ui-serif, Georgia, serif;
+    --font-body:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0d1015; --surface:#151920; --surface-sunken:#101318;
+      --ink:#e8ebf0; --ink-soft:#a7afbd; --ink-faint:#6c7585;
+      --line:#262c36; --line-strong:#333b47;
+      --fw:#8f97ff; --fw-ink:#c1c6ff; --fw-soft:#1c1f3d;
+      --ws:#e2a94f; --ws-ink:#f4cf94; --ws-soft:#332508;
+      --good:#5fd699; --good-soft:#0f3323;
+      --gate:#f0c05a; --gate-soft:#392c0c;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 14px 30px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1015; --surface:#151920; --surface-sunken:#101318;
+    --ink:#e8ebf0; --ink-soft:#a7afbd; --ink-faint:#6c7585;
+    --line:#262c36; --line-strong:#333b47;
+    --fw:#8f97ff; --fw-ink:#c1c6ff; --fw-soft:#1c1f3d;
+    --ws:#e2a94f; --ws-ink:#f4cf94; --ws-soft:#332508;
+    --good:#5fd699; --good-soft:#0f3323;
+    --gate:#f0c05a; --gate-soft:#392c0c;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 14px 30px -16px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  ::selection{ background:var(--fw-soft); color:var(--fw-ink); }
+  a{ color:var(--fw-ink); text-decoration-color:var(--line-strong); text-underline-offset:3px; }
+  a:hover{ text-decoration-color:currentColor; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--fw); outline-offset:2px; border-radius:2px; }
+  h1,h2,h3,h4{ font-family:var(--font-display); font-weight:650; text-wrap:balance; margin:0; color:var(--ink); }
+  code, .mono{ font-family:var(--font-mono); }
+  .container{ max-width:900px; margin:0 auto; padding:0 24px; }
+  .eyebrow{ font-family:var(--font-mono); font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; font-weight:500; }
+
+  .topbar{ position:sticky; top:0; z-index:30; background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .topbar-inner{ display:flex; align-items:center; gap:18px; padding:11px 24px; max-width:900px; margin:0 auto; overflow-x:auto; }
+  .topbar a{ font-family:var(--font-mono); font-size:12.5px; color:var(--ink-soft); white-space:nowrap; }
+  .topbar a:hover{ color:var(--fw-ink); }
+  .topbar .brand{ font-weight:600; color:var(--ink); margin-right:6px; white-space:nowrap; }
+
+  .hero{ padding:52px 0 36px; }
+  .hero h1{ font-size:clamp(30px,4.2vw,42px); line-height:1.1; max-width:16ch; }
+  .hero .dek{ margin-top:14px; max-width:62ch; font-size:17.5px; color:var(--ink-soft); }
+  .root-badges{ display:flex; gap:10px; margin-top:24px; flex-wrap:wrap; }
+  .rb{ display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:10px; font-family:var(--font-mono); font-size:13.5px; font-weight:500; border:1px solid var(--line-strong); }
+  .rb .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .rb.fw{ background:var(--fw-soft); color:var(--fw-ink); border-color:transparent; }
+  .rb.fw .dot{ background:var(--fw); }
+  .rb.ws{ background:var(--ws-soft); color:var(--ws-ink); border-color:transparent; }
+  .rb.ws .dot{ background:var(--ws); }
+
+  section{ padding:44px 0; border-top:1px solid var(--line); }
+  section > .container > .shead{ margin-bottom:26px; }
+  .shead h2{ font-size:26px; }
+  .shead .path{ margin-top:6px; font-family:var(--font-mono); font-size:13.5px; }
+  .shead p{ margin-top:10px; max-width:64ch; color:var(--ink-soft); font-size:15.5px; }
+
+  /* comparison */
+  .compare{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:10px; }
+  .compare > div{ background:var(--surface); padding:20px 22px; }
+  .compare h3{ font-size:16px; display:flex; align-items:center; gap:8px; }
+  .compare h3 .dot{ width:9px; height:9px; border-radius:50%; }
+  .compare .fw-dot{ background:var(--fw); }
+  .compare .ws-dot{ background:var(--ws); }
+  .compare .path{ margin-top:4px; font-family:var(--font-mono); font-size:12.5px; color:var(--ink-faint); }
+  .compare ul{ margin:14px 0 0; padding-left:18px; font-size:14px; color:var(--ink-soft); line-height:1.65; }
+  .compare li{ margin-bottom:4px; }
+  @media (max-width:640px){ .compare{ grid-template-columns:1fr; } }
+
+  /* file-tree table */
+  .ftable{ width:100%; border-collapse:collapse; margin-top:18px; font-size:14px; }
+  .ftable caption{ caption-side:top; text-align:left; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em; padding-bottom:10px; }
+  .ftable th{ text-align:left; font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; font-weight:500; padding:0 12px 8px; border-bottom:1px solid var(--line-strong); }
+  .ftable td{ padding:10px 12px; border-bottom:1px solid var(--line); color:var(--ink-soft); vertical-align:top; }
+  .ftable tr:last-child td{ border-bottom:none; }
+  .ftable td.path{ font-family:var(--font-mono); font-size:13px; color:var(--ink); white-space:nowrap; }
+  .ftable td.count{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--ink-faint); white-space:nowrap; }
+  .table-wrap{ overflow-x:auto; }
+
+  /* subgroup card */
+  .subgroup{ margin-top:28px; }
+  .subgroup .sg-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:4px; flex-wrap:wrap; }
+  .subgroup .sg-head .path{ font-family:var(--font-mono); font-size:14.5px; font-weight:600; color:var(--ink); }
+  .subgroup .sg-head .count{ font-family:var(--font-mono); font-size:12px; color:var(--ink-faint); }
+  .subgroup > p{ font-size:14px; color:var(--ink-soft); max-width:66ch; margin:6px 0 0; }
+
+  /* per-file detail tables (added for the file-purpose pass) */
+  .ftable2{ width:100%; border-collapse:collapse; font-size:13.5px; margin-top:10px; }
+  .ftable2 td{ padding:7px 10px; border-bottom:1px solid var(--line); color:var(--ink-soft); vertical-align:top; }
+  .ftable2 tr:last-child td{ border-bottom:none; }
+  .ftable2 td.file{ font-family:var(--font-mono); font-size:12.5px; color:var(--ink); white-space:nowrap; }
+  .ftable2 tr:hover td{ background:var(--surface-sunken); }
+  .table-wrap2{ overflow-x:auto; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:4px 6px; margin-top:10px; }
+
+  .chiprow{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .chip{ font-family:var(--font-mono); font-size:11.5px; padding:4px 9px; border-radius:6px; background:var(--surface-sunken); border:1px solid var(--line); color:var(--ink-soft); }
+
+  details.stagegroup{ margin-top:14px; border:1px solid var(--line); border-radius:10px; background:var(--surface); overflow:hidden; }
+  details.stagegroup summary{ cursor:pointer; padding:11px 14px; font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--ink); list-style:none; display:flex; align-items:center; gap:8px; }
+  details.stagegroup summary::-webkit-details-marker{ display:none; }
+  details.stagegroup summary::before{ content:"▸"; color:var(--ink-faint); transition:transform .15s; }
+  details.stagegroup[open] summary::before{ transform:rotate(90deg); }
+  details.stagegroup summary .n{ margin-left:auto; font-weight:400; color:var(--ink-faint); font-size:11.5px; }
+  details.stagegroup .table-wrap2{ border:none; border-top:1px solid var(--line); border-radius:0; margin:0; }
+
+  .verdict-table{ width:100%; border-collapse:collapse; font-size:13.5px; margin-top:10px; }
+  .verdict-table th{ text-align:left; font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; padding:0 10px 6px; border-bottom:1px solid var(--line-strong); }
+  .verdict-table td{ padding:7px 10px; border-bottom:1px solid var(--line); }
+  .vpill{ font-family:var(--font-mono); font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px; white-space:nowrap; }
+  .vpill.ready{ background:var(--good-soft); color:var(--good); }
+  .vpill.notready{ background:var(--gate-soft); color:var(--gate); }
+
+  /* phase strip */
+  .phases{ display:flex; flex-direction:column; gap:10px; margin-top:18px; }
+  .phase-row{ display:grid; grid-template-columns:150px 1fr; gap:14px; align-items:start; padding:12px 0; border-bottom:1px solid var(--line); }
+  .phase-row:last-child{ border-bottom:none; }
+  .phase-row .pname{ font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--fw-ink); }
+  .phase-row .pcount{ display:block; margin-top:2px; font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); }
+  .phase-row .stages{ display:flex; flex-wrap:wrap; gap:6px; }
+  .stage-chip{ font-family:var(--font-mono); font-size:12px; padding:4px 9px; border-radius:7px; background:var(--surface-sunken); border:1px solid var(--line); color:var(--ink-soft); }
+  @media (max-width:640px){ .phase-row{ grid-template-columns:1fr; } }
+
+  /* flow */
+  .flow{ display:flex; flex-direction:column; margin-top:22px; }
+  .flow-step{ display:grid; grid-template-columns:34px 1fr; gap:14px; padding-bottom:22px; position:relative; }
+  .flow-step:not(:last-child)::before{ content:""; position:absolute; left:16px; top:34px; bottom:0; width:1.5px; background:var(--line-strong); }
+  .flow-num{ width:34px; height:34px; border-radius:50%; background:var(--fw-soft); color:var(--fw-ink); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:13px; font-weight:600; flex:none; z-index:1; }
+  .flow-body h4{ font-size:15px; }
+  .flow-body p{ margin:5px 0 0; font-size:14px; color:var(--ink-soft); max-width:60ch; }
+  .flow-body .path{ font-family:var(--font-mono); font-size:12.5px; color:var(--ink-faint); margin-top:4px; }
+
+  /* example card */
+  .example-tree{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-top:18px; box-shadow:var(--shadow); }
+  .example-tree .et-line{ font-family:var(--font-mono); font-size:13px; line-height:1.9; white-space:pre; overflow-x:auto; }
+  .et-dir{ color:var(--ws-ink); font-weight:600; }
+  .et-file{ color:var(--ink); }
+  .et-comment{ color:var(--ink-faint); }
+
+  .glossary{ display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-top:18px; }
+  .gterm{ background:var(--surface); padding:13px 16px; display:grid; grid-template-columns:180px 1fr; gap:12px; }
+  .gterm dt{ font-family:var(--font-mono); font-weight:600; font-size:13.5px; color:var(--ink); }
+  .gterm dd{ margin:0; font-size:13.5px; color:var(--ink-soft); }
+  @media (max-width:640px){ .gterm{ grid-template-columns:1fr; } }
+
+  footer{ padding:36px 0 60px; }
+  footer .fline{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; font-family:var(--font-mono); font-size:12px; color:var(--ink-faint); padding-top:20px; border-top:1px solid var(--line); }
+
+  @media (max-width:640px){ .container{ padding:0 18px; } .hero{ padding:38px 0 28px; } }
+</style>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="brand">Workspace Map</span>
+    <a href="#two-roots">Two roots</a>
+    <a href="#framework">.claude/</a>
+    <a href="#workspace">aidlc/</a>
+    <a href="#flow">Request flow</a>
+    <a href="#example">Live example</a>
+    <a href="#glossary">Glossary</a>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="container">
+    <p class="eyebrow" style="color:var(--fw-ink)">Reference · AI-DLC</p>
+    <h1 style="margin-top:10px">What's actually in this repo's AI-DLC folders</h1>
+    <p class="dek">Two directory trees, two different jobs. <code>.claude/</code> is the framework — the reusable engine, the same in every AI-DLC project. <code>aidlc/</code> is this project's own record — every decision, question answered, and artifact this specific build produced. This maps every folder in both — and, inside each one, every one of the 304 individual <code>.md</code> files with its own one-line purpose. Click any collapsed group to expand it.</p>
+    <div class="root-badges">
+      <span class="rb fw"><span class="dot"></span>.claude/ — the framework</span>
+      <span class="rb ws"><span class="dot"></span>aidlc/ — this project's record</span>
+    </div>
+  </div>
+</header>
+
+<section id="two-roots">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow" style="color:var(--ink-faint)">01 · The core distinction</p>
+      <h2>One is code you didn't write. One is a transcript of everything you decided.</h2>
+      <p>Delete <code>.claude/</code> and copy it back in from a fresh AI-DLC install — nothing project-specific is lost, because nothing project-specific lives there. Delete <code>aidlc/</code> and you've lost the entire history of this build: every requirement, every reviewed design, every generated file's manifest, every question you were asked and how you answered it.</p>
+    </div>
+    <div class="compare">
+      <div>
+        <h3><span class="dot fw-dot"></span>.claude/ — the framework</h3>
+        <p class="path">Shipped, version-identical across every AI-DLC project</p>
+        <ul>
+          <li>The orchestrator logic and stage definitions</li>
+          <li>11 domain-expert agent personas + 2 reviewers + 1 composer</li>
+          <li>The methodology knowledge each agent reads before acting</li>
+          <li>The engine — 71 TypeScript tools that track state, log decisions, compile the stage graph</li>
+          <li>Automated hooks and quality sensors</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="dot ws-dot"></span>aidlc/ — this project's record</h3>
+        <p class="path">Unique to this build; this is what you'd show someone to explain what happened</p>
+        <ul>
+          <li>The affirmed team practices (testing posture, layering rules, deploy policy)</li>
+          <li>Every requirement, design doc, and review verdict this project actually produced</li>
+          <li>The full audit trail — every decision logged, every question and its answer</li>
+          <li>Traceability files linking requirements → design → code → tests</li>
+          <li>One folder per piece of work ("intent") — this build has two</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="framework">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow" style="color:var(--fw-ink)">02 · The framework</p>
+      <h2 class="path" style="font-family:var(--font-mono); font-size:26px; color:var(--ink)">.claude/</h2>
+      <p>Nine directories. Each one answers a different question about how the methodology runs.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="ftable">
+        <caption>Top-level contents</caption>
+        <thead><tr><th>Path</th><th>Answers</th><th>Items</th></tr></thead>
+        <tbody>
+          <tr><td class="path">CLAUDE.md</td><td>What is this project and how do I start it?</td><td class="count">1 file</td></tr>
+          <tr><td class="path">agents/</td><td>Who does the work — which persona leads each kind of task?</td><td class="count">14 files</td></tr>
+          <tr><td class="path">skills/</td><td>What commands can I type to invoke a stage or utility directly?</td><td class="count">42 folders</td></tr>
+          <tr><td class="path">aidlc-common/</td><td>What does each of the 33 stages actually require, and what rules govern how a stage runs?</td><td class="count">2 subfolders</td></tr>
+          <tr><td class="path">knowledge/</td><td>What does each agent already know before it starts — its craft reference?</td><td class="count">15 subfolders</td></tr>
+          <tr><td class="path">sensors/</td><td>What gets checked automatically on every artifact write?</td><td class="count">6 files</td></tr>
+          <tr><td class="path">hooks/</td><td>What runs automatically at session start/end, on tool calls, on state changes?</td><td class="count">18 files</td></tr>
+          <tr><td class="path">tools/</td><td>The actual engine — state tracking, audit logging, the compiled stage graph</td><td class="count">71 .ts files + data/</td></tr>
+          <tr><td class="path">rules/, scopes/, settings.json</td><td>How does Claude's ambient context link to this project's memory, and what depth-of-process profiles exist?</td><td class="count">1 + 12 + 2 files</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">agents/</span><span class="count">14 personas, one .md each</span></div>
+      <p>Each file is a full persona brief — responsibilities, collaboration rules, key principles — that Claude adopts for the duration of a stage. 11 lead domain work (product, design, delivery, architect, aws-platform, compliance, devsecops, developer, quality, pipeline-deploy, operations); 2 are review-only and never produce, only critique (product-lead, architecture-reviewer); 1 (composer) decides how much process a piece of work actually needs.</p>
+      <div class="table-wrap2"><table class="ftable2"><tbody>
+        <tr><td class="file">aidlc-product-agent.md</td><td>Requirements, user stories, scope, market research — leads Intent Capture and Requirements Analysis.</td></tr>
+        <tr><td class="file">aidlc-design-agent.md</td><td>Wireframes, interaction design, accessibility — leads Rough and Refined Mockups.</td></tr>
+        <tr><td class="file">aidlc-delivery-agent.md</td><td>Team formation, Bolt sequencing, phase handoffs — leads Delivery Planning.</td></tr>
+        <tr><td class="file">aidlc-architect-agent.md</td><td>Domain design, contracts, NFR patterns, component decomposition — leads most design-stage work.</td></tr>
+        <tr><td class="file">aidlc-aws-platform-agent.md</td><td>Infrastructure design and environment provisioning — the cloud specialist.</td></tr>
+        <tr><td class="file">aidlc-compliance-agent.md</td><td>Regulatory mapping, data classification, risk assessment — support-only, never leads a stage.</td></tr>
+        <tr><td class="file">aidlc-devsecops-agent.md</td><td>Threat modelling, security requirements, secure pipeline design.</td></tr>
+        <tr><td class="file">aidlc-developer-agent.md</td><td>Code generation, reverse engineering, data modelling — leads Code Generation.</td></tr>
+        <tr><td class="file">aidlc-quality-agent.md</td><td>Test strategy, quality gates, performance validation — leads Build and Test.</td></tr>
+        <tr><td class="file">aidlc-pipeline-deploy-agent.md</td><td>CI/CD configuration, deployment strategy and execution.</td></tr>
+        <tr><td class="file">aidlc-operations-agent.md</td><td>Observability, incident response, feedback loops — the SRE role.</td></tr>
+        <tr><td class="file">aidlc-product-lead-agent.md</td><td>Review-only — challenges requirements and UX artifacts for completeness, never produces.</td></tr>
+        <tr><td class="file">aidlc-architecture-reviewer-agent.md</td><td>Review-only — checks technical designs for soundness and hidden dependencies, never produces.</td></tr>
+        <tr><td class="file">aidlc-composer-agent.md</td><td>Estimates how much process a task actually needs and proposes a tailored stage plan.</td></tr>
+      </tbody></table></div>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">skills/</span><span class="count">43 files (42 SKILL.md + 1 reference doc)</span></div>
+      <p>Every stage has a matching skill so it can be run in isolation (e.g. <code>aidlc-code-generation</code> runs just that one stage without touching the main workflow). The rest are utilities: <code>aidlc</code> (the main orchestrator, what <code>/aidlc</code> actually invokes), <code>aidlc-compose</code> (the adaptive planner), <code>aidlc-knowledge</code> (document indexing), five scope shortcuts (<code>aidlc-mvp</code>, <code>aidlc-express</code>, etc. — skip scope-detection and go straight to a named depth), and three read-only reporting skills (<code>aidlc-session-cost</code>, <code>aidlc-replay</code>, <code>aidlc-outcomes-pack</code>).</p>
+      <div class="table-wrap2"><table class="ftable2"><tbody>
+        <tr><td class="file">aidlc/SKILL.md</td><td>The main orchestrator — what <code>/aidlc</code> itself invokes; owns the whole forwarding loop.</td></tr>
+        <tr><td class="file">aidlc/question-rendering.md</td><td>Defines how this specific harness renders the framework's structured questions on screen.</td></tr>
+        <tr><td class="file">aidlc-compose/SKILL.md</td><td>Forces the adaptive composer to propose a tailored stage plan, even for a task that would match a stock scope.</td></tr>
+        <tr><td class="file">aidlc-init/SKILL.md</td><td>Starts a brand-new workflow — mints the first intent in one step.</td></tr>
+        <tr><td class="file">aidlc-knowledge/SKILL.md</td><td>Indexes the team's own documents (PDFs, specs) so agents can cite them.</td></tr>
+        <tr><td class="file">aidlc-session-cost/SKILL.md</td><td>Read-only: prints deterministic stage/duration/decision counts for the current run.</td></tr>
+        <tr><td class="file">aidlc-replay/SKILL.md</td><td>Read-only: turns the audit trail into a readable narrative of what happened.</td></tr>
+        <tr><td class="file">aidlc-outcomes-pack/SKILL.md</td><td>Writes a single OUTCOMES.md handover document at the end of a workflow.</td></tr>
+        <tr><td class="file">aidlc-bugfix / aidlc-express / aidlc-feature / aidlc-mvp / aidlc-security-patch/SKILL.md</td><td>Five shortcuts that skip scope-detection and fix a named depth profile directly.</td></tr>
+      </tbody></table></div>
+      <div class="chiprow">
+        <span class="chip">approval-handoff</span><span class="chip">build-and-test</span><span class="chip">ci-pipeline</span><span class="chip">code-generation</span><span class="chip">contract-design</span><span class="chip">delivery-planning</span><span class="chip">deployment-execution</span><span class="chip">deployment-pipeline</span><span class="chip">domain-design</span><span class="chip">environment-provisioning</span><span class="chip">feasibility</span><span class="chip">feedback-optimization</span><span class="chip">functional-design</span><span class="chip">incident-response</span><span class="chip">infrastructure-design</span><span class="chip">intent-capture</span><span class="chip">market-research</span><span class="chip">nfr-design</span><span class="chip">nfr-requirements</span><span class="chip">observability-setup</span><span class="chip">performance-validation</span><span class="chip">practices-discovery</span><span class="chip">refined-mockups</span><span class="chip">requirements-analysis</span><span class="chip">reverse-engineering</span><span class="chip">rough-mockups</span><span class="chip">scope-definition</span><span class="chip">team-formation</span><span class="chip">units-generation</span><span class="chip">user-stories</span>
+      </div>
+      <p style="margin-top:8px; font-size:13px">↑ each of these 30 chips is <code>aidlc-&lt;name&gt;/SKILL.md</code> — "run this one stage on its own, never touching the main workflow's position."</p>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">aidlc-common/protocols/</span><span class="count">9 files + conductor.md</span></div>
+      <p>The behavioral rulebook shared by every stage — approval-gate mechanics, question formatting, how a reviewer's verdict gets recorded, how parallel ("swarm") construction work is refereed, what happens on session resume. <code>stage-protocol.md</code> is the one loaded on literally every stage; the rest load only when a directive says they're relevant.</p>
+      <div class="table-wrap2"><table class="ftable2"><tbody>
+        <tr><td class="file">conductor.md</td><td>The execution-quality charter every stage runs under — how to run a stage well, not just correctly.</td></tr>
+        <tr><td class="file">stage-definition.md</td><td>The authoritative contract for what shape every one of the 33 stage files must take.</td></tr>
+        <tr><td class="file">stage-protocol.md</td><td>Mandatory on every stage — gate mechanics, question format, state tracking, completion messages.</td></tr>
+        <tr><td class="file">stage-protocol-construction.md</td><td>Loads on the first Construction directive — per-unit iteration and Bolt-level rules.</td></tr>
+        <tr><td class="file">stage-protocol-ensemble.md</td><td>Loads when a stage runs as subagent, pipeline, or mob rather than solo.</td></tr>
+        <tr><td class="file">stage-protocol-governance.md</td><td>Loads at phase boundaries — the Ideation→Inception, Inception→Construction, Construction→Operation checks.</td></tr>
+        <tr><td class="file">stage-protocol-learnings.md</td><td>Loads when a stage can promote a human correction into a persistent team practice.</td></tr>
+        <tr><td class="file">stage-protocol-recovery.md</td><td>Loads on session resume or when something changed mid-stage — error and drift handling.</td></tr>
+        <tr><td class="file">stage-protocol-reviewer.md</td><td>Loads whenever a directive names an adversarial or advisory reviewer.</td></tr>
+        <tr><td class="file">stage-protocol-swarm.md</td><td>Loads for parallel, multi-stage Construction batches and their settled-state re-entry.</td></tr>
+      </tbody></table></div>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">aidlc-common/stages/</span><span class="count">33 stage definitions across 5 phases</span></div>
+      <p>One file per stage — what it produces, what it consumes from earlier stages, who leads it, what questions it asks. This is the actual content of the methodology; everything else is machinery for running it.</p>
+      <div class="phases">
+        <div class="phase-row">
+          <div><span class="pname">initialization/</span><span class="pcount">3 stages · bootstrap only</span></div>
+          <div class="stages"><span class="stage-chip">workspace-scaffold</span><span class="stage-chip">workspace-detection</span><span class="stage-chip">state-init</span></div>
+        </div>
+        <div class="phase-row">
+          <div><span class="pname">ideation/</span><span class="pcount">7 stages</span></div>
+          <div class="stages"><span class="stage-chip">intent-capture</span><span class="stage-chip">market-research</span><span class="stage-chip">feasibility</span><span class="stage-chip">scope-definition</span><span class="stage-chip">team-formation</span><span class="stage-chip">rough-mockups</span><span class="stage-chip">approval-handoff</span></div>
+        </div>
+        <div class="phase-row">
+          <div><span class="pname">inception/</span><span class="pcount">9 stages</span></div>
+          <div class="stages"><span class="stage-chip">reverse-engineering</span><span class="stage-chip">practices-discovery</span><span class="stage-chip">requirements-analysis</span><span class="stage-chip">user-stories</span><span class="stage-chip">refined-mockups</span><span class="stage-chip">domain-design</span><span class="stage-chip">units-generation</span><span class="stage-chip">contract-design</span><span class="stage-chip">delivery-planning</span></div>
+        </div>
+        <div class="phase-row">
+          <div><span class="pname">construction/</span><span class="pcount">7 stages</span></div>
+          <div class="stages"><span class="stage-chip">functional-design</span><span class="stage-chip">nfr-requirements</span><span class="stage-chip">nfr-design</span><span class="stage-chip">infrastructure-design</span><span class="stage-chip">code-generation</span><span class="stage-chip">build-and-test</span><span class="stage-chip">ci-pipeline</span></div>
+        </div>
+        <div class="phase-row">
+          <div><span class="pname">operation/</span><span class="pcount">7 stages</span></div>
+          <div class="stages"><span class="stage-chip">deployment-pipeline</span><span class="stage-chip">environment-provisioning</span><span class="stage-chip">deployment-execution</span><span class="stage-chip">observability-setup</span><span class="stage-chip">incident-response</span><span class="stage-chip">performance-validation</span><span class="stage-chip">feedback-optimization</span></div>
+        </div>
+      </div>
+      <p style="margin-top:12px">Not every stage runs on every project — <code>scopes/</code> (below) decides which ones apply. This build used a custom composed scope; see the live example further down for exactly which stages actually fired. Click a phase below for each stage's own one-line purpose.</p>
+
+      <details class="stagegroup"><summary>initialization/ <span class="n">3 files — bootstrap only, no persona</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">workspace-scaffold.md</td><td>Ensures a new intent's record and in-scope phase folders exist before anything else runs.</td></tr>
+          <tr><td class="file">workspace-detection.md</td><td>Scans a repo to classify it — greenfield or brownfield — before Ideation starts.</td></tr>
+          <tr><td class="file">state-init.md</td><td>Creates the first <code>aidlc-state.md</code> for a new workflow.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="stagegroup"><summary>ideation/ <span class="n">7 files</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">intent-capture.md</td><td>Turns a freeform request into a structured intent statement and stakeholder map.</td></tr>
+          <tr><td class="file">market-research.md</td><td>Competitive landscape and opportunity sizing, when the intent needs it.</td></tr>
+          <tr><td class="file">feasibility.md</td><td>Checks technical and constraint feasibility before scope is locked.</td></tr>
+          <tr><td class="file">scope-definition.md</td><td>Prioritizes the backlog and fixes the boundary of what ships in v1.</td></tr>
+          <tr><td class="file">team-formation.md</td><td>Decides team shape and mob-programming plan, when relevant.</td></tr>
+          <tr><td class="file">rough-mockups.md</td><td>Early low-fidelity concept visualization.</td></tr>
+          <tr><td class="file">approval-handoff.md</td><td>Rolls up every Ideation artifact into one initiative brief and decision log, then gates the phase.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="stagegroup"><summary>inception/ <span class="n">9 files</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">reverse-engineering.md</td><td>Scans an existing codebase into a code knowledge base — brownfield only.</td></tr>
+          <tr><td class="file">practices-discovery.md</td><td>Interviews the team on how they actually work — testing posture, walking-skeleton stance, branch strategy.</td></tr>
+          <tr><td class="file">requirements-analysis.md</td><td>Turns the intent into numbered, testable functional and business requirements.</td></tr>
+          <tr><td class="file">user-stories.md</td><td>Given/When/Then stories run as a mob ensemble across product, design, dev, and QA.</td></tr>
+          <tr><td class="file">refined-mockups.md</td><td>Mid-to-high fidelity screens with every UI state (empty, loading, success, error, partial) documented.</td></tr>
+          <tr><td class="file">domain-design.md</td><td>Identifies the logical components — the bounded pieces of software you'll actually write code for.</td></tr>
+          <tr><td class="file">units-generation.md</td><td>Produces the dependency DAG between components — topology only, no ordering.</td></tr>
+          <tr><td class="file">contract-design.md</td><td>Formal boundary agreements (data shape, protocol) so components can be built in parallel.</td></tr>
+          <tr><td class="file">delivery-planning.md</td><td>Chooses the actual build order (Bolt sequence) through that dependency DAG.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="stagegroup"><summary>construction/ <span class="n">7 files</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">functional-design.md</td><td>Architectural-level business logic, domain models, and rules — design, not implementation.</td></tr>
+          <tr><td class="file">nfr-requirements.md</td><td>Quantifies the non-functional targets (performance, security, scalability, reliability, observability).</td></tr>
+          <tr><td class="file">nfr-design.md</td><td>Architectural patterns and strategies that satisfy those NFR targets.</td></tr>
+          <tr><td class="file">infrastructure-design.md</td><td>What infrastructure is needed and why — not implementation-ready IaC.</td></tr>
+          <tr><td class="file">code-generation.md</td><td>Writes the actual application code, straight to the workspace root, never the record.</td></tr>
+          <tr><td class="file">build-and-test.md</td><td>Builds, runs every test layer, and verifies coverage against every unit's outputs.</td></tr>
+          <tr><td class="file">ci-pipeline.md</td><td>Configures the CI workflow files and quality gates.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="stagegroup"><summary>operation/ <span class="n">7 files</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">deployment-pipeline.md</td><td>CD configuration — trigger, promotion path, rollback mechanism.</td></tr>
+          <tr><td class="file">environment-provisioning.md</td><td>Provisions and inventories the target environment(s).</td></tr>
+          <tr><td class="file">deployment-execution.md</td><td>Actually runs the deployment, smoke-tests it, and validates health.</td></tr>
+          <tr><td class="file">observability-setup.md</td><td>Wires up the monitoring strategy from NFR design.</td></tr>
+          <tr><td class="file">incident-response.md</td><td>Generates runbooks and escalation paths.</td></tr>
+          <tr><td class="file">performance-validation.md</td><td>Load-tests against the NFR performance requirements.</td></tr>
+          <tr><td class="file">feedback-optimization.md</td><td>Closes the loop — reads observability data back into optimization decisions.</td></tr>
+        </tbody></table></div>
+      </details>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">knowledge/</span><span class="count">59 files across 14 agent folders + shared</span></div>
+      <p>Reference material, not instructions — e.g. <code>aidlc-developer-agent/code-generation-patterns.md</code> covers SOLID principles and error-handling conventions; <code>aidlc-pipeline-deploy-agent/cicd-patterns.md</code> covers pipeline design. <code>aidlc-shared/</code> holds cross-cutting material every agent reads regardless of role.</p>
+
+      <details class="stagegroup"><summary>aidlc-shared/ <span class="n">9 files — read by every agent</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">ai-dlc-principles.md</td><td>The mob-model philosophy behind why AI-DLC uses broad personas instead of narrow specialists.</td></tr>
+          <tr><td class="file">audit-format.md</td><td>The fixed vocabulary of audit event names — never invent a new one.</td></tr>
+          <tr><td class="file">brownfield.md</td><td>Safeguards for any stage that modifies existing code or infrastructure.</td></tr>
+          <tr><td class="file">rules-reading.md</td><td>How any agent reads team-affirmed practices from the layered memory files.</td></tr>
+          <tr><td class="file">verification.md</td><td>The element-level traceability rules every stage's coverage check follows.</td></tr>
+          <tr><td class="file">state-template.md</td><td>The field contract for aidlc-state.md.</td></tr>
+          <tr><td class="file">memory-template.md</td><td>The template each stage's own auto-updated diary is built from.</td></tr>
+          <tr><td class="file">knowledge-readme-template.md · worktree-info-schema.md</td><td>A README stub for team knowledge folders, and the schema for worktree-info output.</td></tr>
+        </tbody></table></div>
+      </details>
+      <details class="stagegroup"><summary>Per-agent craft references <span class="n">50 files</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">product-agent/ (7)</td><td>A requirements guide and elicitation techniques, user story patterns, prioritization frameworks, market research methods, a functional-design guide, a general product guide.</td></tr>
+          <tr><td class="file">design-agent/ (5)</td><td>WCAG accessibility, wireframing, interaction patterns, a component-spec template, a UX review checklist.</td></tr>
+          <tr><td class="file">architect-agent/ (6)</td><td>Architecture patterns, DDD, ADR template, NFR design guide and patterns, a general architecture guide.</td></tr>
+          <tr><td class="file">developer-agent/ (6)</td><td>REST API design, code analysis, code generation guide and patterns, data modelling, RE artifact templates.</td></tr>
+          <tr><td class="file">devsecops-agent/ (4)</td><td>DevSecOps pipeline patterns, STRIDE threat modelling, a security guide, an NFR requirements guide.</td></tr>
+          <tr><td class="file">aws-platform-agent/ (4)</td><td>CDK best practices, cost optimization, an infrastructure tool-choice guide, the AWS Well-Architected Framework.</td></tr>
+          <tr><td class="file">pipeline-deploy-agent/ (3)</td><td>Branching strategies, CI/CD patterns, deployment strategies.</td></tr>
+          <tr><td class="file">quality-agent/ (4)</td><td>Test strategy patterns, a general testing guide, NFR reliability guide, NFR validation methods.</td></tr>
+          <tr><td class="file">operations-agent/ (4)</td><td>Incident response, observability patterns, SLO/SLI/error-budget patterns, an NFR performance guide.</td></tr>
+          <tr><td class="file">delivery-agent/ (3)</td><td>Mob programming, Team Topologies, a workflow-planning guide.</td></tr>
+          <tr><td class="file">compliance-agent/ (1)</td><td>An overview of major regulatory frameworks and how they apply to cloud-native apps.</td></tr>
+          <tr><td class="file">composer-agent/ (1)</td><td>How to fit ceremony to task — the composer's own method.</td></tr>
+          <tr><td class="file">product-lead-agent/ (1) · architecture-reviewer-agent/ (1)</td><td>How each one's role changes when reviewing someone else's work instead of producing its own.</td></tr>
+        </tbody></table></div>
+      </details>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">sensors/</span><span class="count">6 files</span></div>
+      <p>Automated checks that fire on matching writes or once per artifact at a gate. A stage's frontmatter declares which sensors apply to it.</p>
+      <div class="table-wrap2"><table class="ftable2"><tbody>
+        <tr><td class="file">aidlc-claim-sources.md</td><td>Checks every claim in Intent Capture carries a source tag that resolves to a confirmed source.</td></tr>
+        <tr><td class="file">aidlc-required-sections.md</td><td>Checks a stage's output contains every H2 heading its template requires.</td></tr>
+        <tr><td class="file">aidlc-upstream-coverage.md</td><td>Checks a stage actually addressed the upstream artifacts its own frontmatter says it consumes.</td></tr>
+        <tr><td class="file">aidlc-traceability.md</td><td>Verifies element-level coverage and flags orphaned requirements in traceability.json.</td></tr>
+        <tr><td class="file">aidlc-linter.md</td><td>Wraps the project's own linter (ESLint here) and fires on generated TS/JS.</td></tr>
+        <tr><td class="file">aidlc-type-check.md</td><td>Wraps the project's own type-checker (tsc here) and fires on generated TS/TSX.</td></tr>
+      </tbody></table></div>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">hooks/</span><span class="count">18 files</span></div>
+      <p>Scripts the harness runs automatically so nothing has to be remembered by hand — <code>aidlc-write-audit-log.ts</code> appends every event, <code>aidlc-record-human-turn.ts</code> timestamps each human reply, <code>aidlc-session-start.ts</code>/<code>aidlc-session-end.ts</code> bookend a session, <code>aidlc-state-transition-guard.ts</code> blocks an illegal state jump before it happens.</p>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">tools/</span><span class="count">71 TypeScript files + data/</span></div>
+      <p>The actual engine, run through the <code>aidlc</code> binary. <code>aidlc-orchestrate.ts</code> is the center of it — the single source of truth for what runs next. <code>aidlc-state.ts</code>, <code>aidlc-log.ts</code>, <code>aidlc-learnings.ts</code> handle state, the decision log, and self-learning. <code>tools/data/</code> holds the compiled outputs these tools read: <code>stage-graph.json</code> (the 33 stages, pre-linked), <code>scope-grid.json</code> (which stages each of the 12 scopes runs), and per-project settings schemas.</p>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">scopes/</span><span class="count">12 files</span></div>
+      <p>Named depth-of-process profiles — what tells the orchestrator which of the 33 stages to run for a given piece of work.</p>
+      <div class="table-wrap2"><table class="ftable2"><tbody>
+        <tr><td class="file">aidlc-poc.md</td><td>Prove feasibility fast — 8 of 33 stages.</td></tr>
+        <tr><td class="file">aidlc-bugfix.md</td><td>Fix a specific bug — 9 of 33.</td></tr>
+        <tr><td class="file">aidlc-express.md</td><td>Lightest full run: requirements to deploy, no design pass, no reviewers — 10 of 33.</td></tr>
+        <tr><td class="file">aidlc-refactor.md</td><td>Clean up existing code — 10 of 33.</td></tr>
+        <tr><td class="file">aidlc-security-patch.md</td><td>CVE response — 10 of 33.</td></tr>
+        <tr><td class="file">aidlc-infra.md</td><td>Infrastructure-only changes — 13 of 33.</td></tr>
+        <tr><td class="file">aidlc-classic.md</td><td>V1-style ceremony through Inception and Construction — the implicit default — 18 of 33.</td></tr>
+        <tr><td class="file">aidlc-workshop.md</td><td>Facilitated group session with mandatory gates — 26 of 33.</td></tr>
+        <tr><td class="file">aidlc-mvp.md</td><td>Skip Operations, ship the core — 23 of 33.</td></tr>
+        <tr><td class="file">aidlc-feature.md</td><td>Full lifecycle for new features at practical depth — all 33.</td></tr>
+        <tr><td class="file">aidlc-enterprise.md</td><td>Regulated enterprise feature, full audit trail — all 33.</td></tr>
+        <tr><td class="file">aidlc-meeting-card-scheduler.md</td><td>The custom scope the composer wrote specifically for this build — see the live example below.</td></tr>
+      </tbody></table></div>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">tools/data/memory-seed/</span><span class="count">7 files</span></div>
+      <p>The blank templates a brand-new project's memory starts from — org/team/project/phase guardrails with no content affirmed yet. Compare against the live, filled-in versions under <code>aidlc/spaces/default/memory/</code> below.</p>
+      <div class="table-wrap2"><table class="ftable2"><tbody>
+        <tr><td class="file">org.md · team.md · project.md</td><td>Empty-section templates for the three main layers, ready to be affirmed at Practices Discovery.</td></tr>
+        <tr><td class="file">phases/ideation.md · inception.md · construction.md · operation.md</td><td>The fixed, non-editable phase guardrails — identical to what's actually in effect for this project.</td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<section id="workspace">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow" style="color:var(--ws-ink)">03 · This project's record</p>
+      <h2 class="path" style="font-family:var(--font-mono); font-size:26px; color:var(--ink)">aidlc/</h2>
+      <p>Everything below is specific to this project. A different AI-DLC build would have a completely different <code>aidlc/</code> tree — same shape, different content.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="ftable">
+        <caption>aidlc/spaces/default/ — this team's one workspace</caption>
+        <thead><tr><th>Path</th><th>What's in it</th></tr></thead>
+        <tbody>
+          <tr><td class="path">memory/</td><td>org.md, team.md, project.md + phases/*.md — the layered rules this team actually affirmed (testing posture, layer boundaries, deploy policy), read into every agent's context automatically</td></tr>
+          <tr><td class="path">intents/</td><td>One folder per piece of work. This workspace has two: the main build and a parked, unstarted second one — see below</td></tr>
+          <tr><td class="path">codekb/</td><td>Reverse-engineering knowledge base for existing codebases — empty here, since this was a greenfield build with nothing to reverse-engineer</td></tr>
+          <tr><td class="path">knowledge/</td><td>Team-curated reference docs (PDFs, specs) the team can feed the agents — empty here, unused this project</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">memory/</span><span class="count">7 files — the live, affirmed rules</span></div>
+      <p>The strict-additive rule chain every stage reads: <code>org.md</code> → <code>team.md</code> → <code>project.md</code> → <code>phases/&lt;phase&gt;.md</code>. Broader layers set defaults; narrower layers specialize without contradicting them. This is what makes every stage's output consistent with decisions made stages earlier.</p>
+      <div class="table-wrap2"><table class="ftable2"><tbody>
+        <tr><td class="file">org.md</td><td>Framework defaults this team never overrode — trunk-based dev, squash-merge Bolts.</td></tr>
+        <tr><td class="file">team.md</td><td>What Practices Discovery actually affirmed: test-after methodology, 80% coverage floor, the hard "UI never touches storage/PDF-engine directly" rule, deploy-on-merge, security tooling.</td></tr>
+        <tr><td class="file">project.md</td><td>This project's own specializations and every self-learned correction — layering violations caught, review-receipt ordering, etc.</td></tr>
+        <tr><td class="file">phases/*.md (4)</td><td>The fixed guardrails for Ideation, Inception, Construction, and Operation — unchanged from the shipped defaults.</td></tr>
+      </tbody></table></div>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">intents/260917-meeting-card-scheduler/</span><span class="count">109 files — the actual build</span></div>
+      <p>One subfolder per phase (<code>ideation/</code>, <code>inception/</code>, <code>construction/</code>, <code>operation/</code>), each holding one subfolder per stage that ran, each holding that stage's real artifacts. Plus <code>audit/</code> (every event this build ever logged, append-only) and <code>.aidlc-engine/</code> (the live state machine). Stages that didn't run for this project (reverse-engineering, user-stories, units-generation, contract-design, delivery-planning, observability-setup, incident-response, performance-validation, feedback-optimization) have no folder — the custom scope skipped them.</p>
+
+      <details class="stagegroup" open><summary>Root files <span class="n">2 files</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">aidlc-state.md</td><td>The live state machine — current phase, current stage, gate status, the full original project description.</td></tr>
+          <tr><td class="file">audit/bs-01233-756ba197ef6c.md</td><td>The append-only event log — every human turn, decision, and state change this build ever recorded.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="stagegroup"><summary>ideation/ <span class="n">13 files across 3 stages</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">intent-capture/intent-capture-questions.md</td><td>The clarifying Q&amp;A that resolved "zero cloud dependency" into a hosted-but-no-shared-database model.</td></tr>
+          <tr><td class="file">intent-capture/intent-statement.md</td><td>The structured problem statement — scattered manual meeting planning tools as the pain point.</td></tr>
+          <tr><td class="file">intent-capture/stakeholder-map.md</td><td>Who cares about this and why — hosts, attendees, the solo builder.</td></tr>
+          <tr><td class="file">intent-capture/memory.md</td><td>The stage's own auto-kept diary.</td></tr>
+          <tr><td class="file">intent-capture/reviews/review-01.md</td><td>READY verdict.</td></tr>
+          <tr><td class="file">approval-handoff/approval-handoff-questions.md</td><td>Final sign-off Q&amp;A before Inception opened.</td></tr>
+          <tr><td class="file">approval-handoff/decision-log.md</td><td>Every Ideation-phase decision, numbered, with rationale and which stage made it.</td></tr>
+          <tr><td class="file">approval-handoff/initiative-brief.md</td><td>The rolled-up brief — scheduling + agenda builder + attendee management + invitation card in one v1.</td></tr>
+          <tr><td class="file">approval-handoff/memory.md</td><td>The stage's own auto-kept diary.</td></tr>
+          <tr><td class="file">scope-definition/intent-backlog.md</td><td>MoSCoW-prioritized proto-Units for later grouping.</td></tr>
+          <tr><td class="file">scope-definition/scope-document.md</td><td>All four capability areas ship together in v1, none deferred.</td></tr>
+          <tr><td class="file">scope-definition/scope-definition-questions.md · memory.md</td><td>Its Q&amp;A and diary.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="stagegroup"><summary>inception/ <span class="n">26 files across 4 stages</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">practices-discovery/practices-discovery-questions.md</td><td>The 9-question interview that set testing posture, layering, deploy policy, and security tooling.</td></tr>
+          <tr><td class="file">practices-discovery/team-practices.md</td><td>The affirmed output of that interview, status: AFFIRMED.</td></tr>
+          <tr><td class="file">practices-discovery/discovered-rules.md</td><td>Rules drawn strictly from human-stated hard constraints, not inferred.</td></tr>
+          <tr><td class="file">practices-discovery/evidence.md</td><td>Why each answer was trusted — greenfield project, no prior codebase to contradict it.</td></tr>
+          <tr><td class="file">practices-discovery/practices-discovery-timestamp.md</td><td>When this interview was run and against what commit (none — pre-code).</td></tr>
+          <tr><td class="file">practices-discovery/contributions/*.md (3)</td><td>Each supporting specialist's (developer, devsecops, quality) own recommendations feeding the interview.</td></tr>
+          <tr><td class="file">practices-discovery/memory.md</td><td>The stage's own auto-kept diary.</td></tr>
+          <tr><td class="file">requirements-analysis/requirements.md</td><td>The numbered FR/BR requirements — replace manual planning with one structured, self-contained tool.</td></tr>
+          <tr><td class="file">requirements-analysis/requirements-analysis-questions.md</td><td>The clarifying Q&amp;A behind those requirements.</td></tr>
+          <tr><td class="file">requirements-analysis/reviews/review-01.md</td><td>READY verdict.</td></tr>
+          <tr><td class="file">requirements-analysis/memory.md</td><td>The stage's own auto-kept diary.</td></tr>
+          <tr><td class="file">domain-design/components.md</td><td>The component catalogue — Scheduling, Persistence, CardGeneration, Presentation.</td></tr>
+          <tr><td class="file">domain-design/decisions.md</td><td>ADRs for domain design — accepted architectural choices with rationale.</td></tr>
+          <tr><td class="file">domain-design/domain-design-questions.md · reviews/review-01.md · memory.md</td><td>The stage's questions, its READY review, and its diary.</td></tr>
+          <tr><td class="file">refined-mockups/mockups.md</td><td>Textual mid/high-fidelity screens, five states documented per screen.</td></tr>
+          <tr><td class="file">refined-mockups/interaction-spec.md</td><td>Component-level interaction specifications with requirement IDs cited inline.</td></tr>
+          <tr><td class="file">refined-mockups/design-system-mapping.md</td><td>Tailwind utility-class tokens standing in for a design system that doesn't otherwise exist.</td></tr>
+          <tr><td class="file">refined-mockups/accessibility-checklist.md</td><td>WCAG 2.1 AA target, checked via axe-core/pa11y as a non-blocking CI signal.</td></tr>
+          <tr><td class="file">refined-mockups/refined-mockups-questions.md · reviews/01 (NOT-READY) · reviews/02 (READY) · memory.md</td><td>Its Q&amp;A, the two-round review history, and its diary.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="stagegroup"><summary>construction/ <span class="n">52 files across 7 stages</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">functional-design/entities.md</td><td>The Meeting/AgendaItem/Attendee entity model, all owned by Scheduling.</td></tr>
+          <tr><td class="file">functional-design/rules.md</td><td>Every business rule (BR1.1–BR7.1) as a structured YAML block.</td></tr>
+          <tr><td class="file">functional-design/functional-spec.md</td><td>The source of truth for workflows and state transitions, tying entities and rules into ordered behavior.</td></tr>
+          <tr><td class="file">functional-design/frontend-components.md</td><td>The React component hierarchy, prop/state shapes, and data-flow wiring for Presentation.</td></tr>
+          <tr><td class="file">functional-design/functional-design-questions.md · reviews/01 (NOT-READY) · reviews/02 (READY) · memory.md</td><td>Its Q&amp;A, two review rounds (the layering-violation catch), and diary.</td></tr>
+          <tr><td class="file">nfr-requirements/{performance,security,scalability,reliability,observability}-requirements.md</td><td>Five quantified NFR documents, each resolving one requirements.md gap into a measurable target.</td></tr>
+          <tr><td class="file">nfr-requirements/tech-stack-decisions.md</td><td>Locks the actual libraries — Vercel, @react-pdf/renderer, qrcode.react, idb-keyval (later replaced by Supabase).</td></tr>
+          <tr><td class="file">nfr-requirements/nfr-requirements-questions.md · reviews/review-01.md (READY) · memory.md</td><td>Its Q&amp;A, one-round READY review, and diary.</td></tr>
+          <tr><td class="file">nfr-design/{performance,security,scalability,reliability,observability}-design.md</td><td>Five architectural strategies satisfying the requirements above — e.g. no auth by design, no custom caching.</td></tr>
+          <tr><td class="file">nfr-design/logical-components.md</td><td>Maps the failure-domain inventory directly to components.</td></tr>
+          <tr><td class="file">nfr-design/nfr-design-questions.md · reviews/01 (NOT-READY) · reviews/02 (READY) · memory.md</td><td>Its Q&amp;A, the two-round review (a real layering violation caught and fixed), and diary.</td></tr>
+          <tr><td class="file">infrastructure-design/infrastructure-specification.md</td><td>Every infra facet and its rationale — Vercel, no separate IaC tool, an Edge Middleware row.</td></tr>
+          <tr><td class="file">infrastructure-design/cicd-pipeline.md</td><td>Two platforms split responsibility — GitHub Actions for pre-merge gates, Vercel for deploy.</td></tr>
+          <tr><td class="file">infrastructure-design/monitoring-design.md</td><td>Implements the "built-in-only" observability decision.</td></tr>
+          <tr><td class="file">infrastructure-design/infrastructure-design-questions.md · reviews/01 (NOT-READY) · reviews/02 (READY) · memory.md</td><td>Its Q&amp;A, the two-round review (3 Major findings fixed), and diary.</td></tr>
+          <tr><td class="file">code-generation/code-generation-plan.md</td><td>The 12-step build plan, approved before any code was written.</td></tr>
+          <tr><td class="file">code-generation/code-generation-questions.md</td><td>The Plan Approval Q&amp;A, including a Revision 1 fixing a Critical finding from adversarial review.</td></tr>
+          <tr><td class="file">code-generation/code-summary.md</td><td>What got built, key decisions, every deviation disclosed — including the corrected npm-audit finding.</td></tr>
+          <tr><td class="file">code-generation/unit-test-instructions.md</td><td>What "done, tested" meant for this stage — the Testing Contract.</td></tr>
+          <tr><td class="file">code-generation/reviews/review-01.md</td><td>READY verdict.</td></tr>
+          <tr><td class="file">code-generation/memory.md</td><td>The stage's own auto-kept diary.</td></tr>
+          <tr><td class="file">build-and-test/{build,integration-test,performance-test,security-test}-instructions.md</td><td>Four instruction sets — how to build it and how to test each NFR-driven concern.</td></tr>
+          <tr><td class="file">build-and-test/build-and-test-summary.md</td><td>Build succeeds; readiness assessment across build/test/deploy dimensions.</td></tr>
+          <tr><td class="file">build-and-test/test-results.md</td><td>The real numbers — 53/53 unit tests, 93.7% coverage — plus the Loop-Back Log of the two real CSP bugs found and fixed.</td></tr>
+          <tr><td class="file">build-and-test/cross-unit-traceability.md</td><td>Final FR/NFR coverage gate — PASS, every requirement resolves to a target.</td></tr>
+          <tr><td class="file">build-and-test/memory.md</td><td>The stage's own auto-kept diary.</td></tr>
+          <tr><td class="file">ci-pipeline/ci-config.md</td><td>GitHub Actions confirmed, parallel job design over the team.md sequential table.</td></tr>
+          <tr><td class="file">ci-pipeline/quality-gates.md</td><td>The full gate/job/criteria/failure-action table.</td></tr>
+          <tr><td class="file">ci-pipeline/ci-pipeline-questions.md · memory.md</td><td>Its Q&amp;A and diary.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="stagegroup"><summary>operation/ <span class="n">14 files across 3 stages</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">deployment-pipeline/cd-config.md</td><td>Vercel's native GitHub App integration as the deploy trigger.</td></tr>
+          <tr><td class="file">deployment-pipeline/deployment-strategy.md</td><td>No blue/green or canary — a plain recreate-on-deploy, with the rationale for skipping the fancier options.</td></tr>
+          <tr><td class="file">deployment-pipeline/rollback-runbook.md</td><td>Vercel's instant rollback to any prior immutable deployment as the sole rollback mechanism.</td></tr>
+          <tr><td class="file">deployment-pipeline/deployment-pipeline-questions.md · memory.md</td><td>Its Q&amp;A and diary.</td></tr>
+          <tr><td class="file">environment-provisioning/environment-inventory.md</td><td>The environment table plus the manual Vercel setup checklist for a human to run.</td></tr>
+          <tr><td class="file">environment-provisioning/validation-report.md</td><td>Design-consistency PASS; live-environment validation explicitly deferred (no credentials in this session).</td></tr>
+          <tr><td class="file">environment-provisioning/environment-provisioning-questions.md · memory.md</td><td>Its Q&amp;A and diary.</td></tr>
+          <tr><td class="file">deployment-execution/deployment-log.md</td><td>The real record of what actually got deployed and when, including the Vercel-GitHub connection saga.</td></tr>
+          <tr><td class="file">deployment-execution/smoke-test-results.md</td><td>The manual value-stream check run against the live production URL.</td></tr>
+          <tr><td class="file">deployment-execution/health-check-report.md</td><td>No automated health endpoint exists (no backend) — what was checked instead.</td></tr>
+          <tr><td class="file">deployment-execution/deployment-execution-questions.md · memory.md</td><td>Its Q&amp;A and diary.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="stagegroup"><summary>verification/ <span class="n">2 files — phase boundary checks</span></summary>
+        <div class="table-wrap2"><table class="ftable2"><tbody>
+          <tr><td class="file">phase-check-ideation.md</td><td>Ideation → Inception boundary verification.</td></tr>
+          <tr><td class="file">phase-check-construction.md</td><td>Construction → Operation boundary verification — cross-unit traceability, every FR/NFR resolved.</td></tr>
+        </tbody></table></div>
+      </details>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">intents/260917-git-cicd-automation/</span><span class="count">2 files — a second, parked intent</span></div>
+      <p>Created mid-project when a second, unrelated piece of work came up (git/CI-CD tooling) — AI-DLC offered to open it as a separate intent rather than derailing the active one, and it was created but never picked back up. This is what "parking work" looks like on disk: nothing lost, nothing blocking, just waiting.</p>
+      <div class="table-wrap2"><table class="ftable2"><tbody>
+        <tr><td class="file">aidlc-state.md</td><td>Frozen at creation — the state machine for a second intent never picked back up.</td></tr>
+        <tr><td class="file">audit/bs-01233-756ba197ef6c.md</td><td>Its own event log — one entry, the moment it was created.</td></tr>
+      </tbody></table></div>
+    </div>
+
+    <div class="subgroup">
+      <div class="sg-head"><span class="path">Every review verdict, in order</span><span class="count">10 reviews</span></div>
+      <p>Two stages needed a second round; the rest passed first time.</p>
+      <table class="verdict-table">
+        <thead><tr><th>Stage</th><th>Round 1</th><th>Round 2</th></tr></thead>
+        <tbody>
+          <tr><td>Intent Capture</td><td><span class="vpill ready">READY</span></td><td>—</td></tr>
+          <tr><td>Requirements Analysis</td><td><span class="vpill ready">READY</span></td><td>—</td></tr>
+          <tr><td>Domain Design</td><td><span class="vpill ready">READY</span></td><td>—</td></tr>
+          <tr><td>Refined Mockups</td><td><span class="vpill notready">NOT-READY</span></td><td><span class="vpill ready">READY</span></td></tr>
+          <tr><td>Functional Design</td><td><span class="vpill notready">NOT-READY</span></td><td><span class="vpill ready">READY</span></td></tr>
+          <tr><td>NFR Requirements</td><td><span class="vpill ready">READY</span></td><td>—</td></tr>
+          <tr><td>NFR Design</td><td><span class="vpill notready">NOT-READY</span></td><td><span class="vpill ready">READY</span></td></tr>
+          <tr><td>Infrastructure Design</td><td><span class="vpill notready">NOT-READY</span></td><td><span class="vpill ready">READY</span></td></tr>
+          <tr><td>Code Generation</td><td><span class="vpill ready">READY</span></td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="flow">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow" style="color:var(--ink-faint)">04 · How a request actually moves through this</p>
+      <h2>From "build me X" to a file on disk</h2>
+    </div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-body">
+          <h4>You describe what you want, or run a skill</h4>
+          <p>Either typed freeform, or a specific command like <code>/aidlc-code-generation</code> to run one stage directly.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-body">
+          <h4>The orchestrator decides what runs next</h4>
+          <p>Reads the live state and the compiled stage graph, returns exactly one instruction — never improvised.</p>
+          <p class="path">.claude/tools/aidlc-orchestrate.ts + tools/data/stage-graph.json</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-body">
+          <h4>The right stage file and persona load</h4>
+          <p>The stage's own file says what it needs and who leads it; that agent's full persona and knowledge load into context.</p>
+          <p class="path">.claude/aidlc-common/stages/&lt;phase&gt;/&lt;stage&gt;.md + .claude/agents/&lt;role&gt;-agent.md</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-body">
+          <h4>Every relevant rule from this project's memory loads too</h4>
+          <p>So the output is consistent with every decision already made — not just what this one stage happens to know.</p>
+          <p class="path">aidlc/spaces/default/memory/*.md</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">5</div>
+        <div class="flow-body">
+          <h4>Questions get asked, an artifact gets written, a gate opens</h4>
+          <p>You approve, request changes, or the loop repeats. Every question and answer, every gate decision, gets logged.</p>
+          <p class="path">aidlc/spaces/default/intents/&lt;intent&gt;/&lt;phase&gt;/&lt;stage&gt;/*.md</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">6</div>
+        <div class="flow-body">
+          <h4>Hooks and sensors run automatically underneath all of it</h4>
+          <p>Nothing above has to remember to log an event or check a requirement — that's handled without being asked.</p>
+          <p class="path">.claude/hooks/*.ts + .claude/sensors/*.md</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="example">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow" style="color:var(--ws-ink)">05 · One real stage, walked through</p>
+      <h2>What Code Generation actually left behind</h2>
+      <p>This is the real, on-disk output of one stage from this build — not a hypothetical. Every file here exists in this repo right now.</p>
+    </div>
+    <div class="example-tree">
+      <div class="et-line"><span class="et-dir">aidlc/spaces/default/intents/260917-meeting-card-scheduler/</span>
+<span class="et-dir">└─ construction/code-generation/</span>
+   <span class="et-file">├─ code-generation-plan.md</span>       <span class="et-comment"># the 12-step build plan, approved before a line of code was written</span>
+   <span class="et-file">├─ code-generation-questions.md</span>  <span class="et-comment"># the Plan Approval Q&amp;A that gated it</span>
+   <span class="et-file">├─ unit-test-instructions.md</span>    <span class="et-comment"># what "done, tested" meant for this stage</span>
+   <span class="et-file">├─ code-summary.md</span>              <span class="et-comment"># what got built, key decisions, deviations disclosed</span>
+   <span class="et-file">├─ source-manifest.json</span>         <span class="et-comment"># all 56 generated files, indexed</span>
+   <span class="et-file">└─ traceability.json</span>            <span class="et-comment"># every requirement mapped to the code that satisfies it</span></div>
+    </div>
+    <p style="margin-top:16px; font-size:14.5px; color:var(--ink-soft); max-width:66ch">Every other stage in this build left the same kind of trail — its own folder, its own questions file, its own produced artifacts. That's the whole of what <code>aidlc/</code> is: 20-odd folders like this one, chained together by traceability files that point backward to the requirement that justified them.</p>
+  </div>
+</section>
+
+<section id="glossary">
+  <div class="container">
+    <div class="shead">
+      <p class="eyebrow" style="color:var(--ink-faint)">06 · Terms worth knowing before you brief someone</p>
+      <h2>Glossary</h2>
+    </div>
+    <dl class="glossary">
+      <div class="gterm"><dt>Stage</dt><dd>One unit of work with a defined lead, inputs, and outputs — e.g. "NFR Design." 33 exist; a given project runs some subset of them.</dd></div>
+      <div class="gterm"><dt>Phase</dt><dd>A group of stages — Ideation, Inception, Construction, Operation (plus a bootstrap-only Initialization).</dd></div>
+      <div class="gterm"><dt>Scope</dt><dd>A named profile deciding which stages run and how deep — "mvp" runs 23 of 33; "poc" runs 8. This build used a custom composed scope tailored to its exact requirements.</dd></div>
+      <div class="gterm"><dt>Intent</dt><dd>One tracked piece of work, with its own folder under aidlc/spaces/&lt;space&gt;/intents/. A workspace can hold several; only one is "active" at a time.</dd></div>
+      <div class="gterm"><dt>Gate</dt><dd>An approval checkpoint — nothing advances past one without an explicit human decision.</dd></div>
+      <div class="gterm"><dt>Directive</dt><dd>The single instruction the orchestrator returns each time it's asked what happens next.</dd></div>
+      <div class="gterm"><dt>Agent persona</dt><dd>The role Claude adopts for a stage — e.g. "developer agent" for Code Generation, "architect agent" for Domain Design.</dd></div>
+      <div class="gterm"><dt>Space</dt><dd>A top-level grouping under aidlc/spaces/ — most setups only ever use one, named "default."</dd></div>
+    </dl>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="fline">
+      <span>AI-DLC workspace map — meeting-card-scheduler</span>
+      <span>Generated from the actual repo contents, not the framework docs</span>
+    </div>
+  </div>
+</footer>
