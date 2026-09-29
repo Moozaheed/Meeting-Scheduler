@@ -107,6 +107,13 @@ linter doesn't already cover it.
 
 ## Forbidden
 
+
+
+- NEVER open a pull request against a branch that has no branch
+  protection configured. Check first: `gh api repos/<owner>/<repo>/branches/<branch>/protection`
+  — a 404 means unprotected. If unprotected, stop and tell the human
+  instead of opening the PR.
+
 <!-- Things agents must never do -->
 
 <!-- Example: Do not ask questions about topics already decided in previous stages -->
@@ -118,11 +125,11 @@ linter doesn't already cover it.
 - **Conversation language — what to localize**: Write in the resolved conversation language every artifact a person reads or reviews — requirements, user stories, plans, specs, reviews, questions, discovered practices, affirmed team and project rules, evidence, decision rationale, and any other explanatory prose — and the agent's own human-facing conversational output in every turn, for the orchestrator and delegated agents alike: conversational chat messages, status updates, progress reports, and transitional narration between tool calls. Structured-question `prompt`, `header`, `options[].description`, and free-text follow-ups are human-facing prose and follow the same rule; only `options[].label` literals the protocol spells verbatim are preserved tokens. This includes the descriptive text of a rule shaped as `ALWAYS …` / `NEVER …`, where the leading marker is a fixed token but the sentence it introduces is not. A Markdown artifact is not English merely because a tool parses part of it: localize the prose that surrounds a preserved token. Verbatim human input echoed into an artifact is always kept exactly as the human wrote it.
 - **Conversation language — preserved tokens**: Any literal a stage file or the stage protocol spells in backticks and tells you to write exactly is a fixed token — keep it English, character for character, and localize only the prose around it. This covers option labels and sentinel VALUES, not just syntax: `[Answer]:` tags with their option letters, the mandatory final option `X. Other (please specify)`, the assumption-confirmation options `A. Accept assumptions` / `B. Convert to follow-up questions` (the engine compares the filled answer against the literal), the `None.` / `None` sentinels under `## Assumptions & Open Questions` and `## Positions`, the `AGREE:` / `OBJECT:` position prefixes, and the `**Collaborator:** <agent-slug>` first line the engine matches exactly before it accepts a stage. Glossing such a literal when you PRESENT it to the human is fine; what you WRITE into an artifact is the literal itself. Also preserved: the source-register tags `[desc]`, `[scope]`, `[assumption]`, `[Q<n>]`, `[memory:M<n>]` with their literal prefixes (`Initial description:`, `Workflow-selected scope:`); the H2 headings the claim-sources sensor matches verbatim (`## Sources`, `## Assumptions & Open Questions`, `## Assumption Confirmation`, `## Review`) plus any other H2 taken from a stage template, which the `required-sections` sensor matches verbatim whenever a template is supplied (the framework ships none, so a team's `aidlc/spaces/<active-space>/memory/templates/` is what arms that check); the reviewer verdicts `READY` and `NOT-READY`; YAML keys and enum values inside fenced blocks (`units`, `name`, `kind`, `depends_on`, `service | spec | ui | packaging | library`); the field labels, status values, and checkbox states of `aidlc-state.md` and the audit shards; the verbatim initial description decoded from `<record>/project-description.json` (the `**Project**` state field is only its safe single-line preview); stable IDs (`FR-1`, `ENT-001`, `BR1.1`); enum and classification values; code and identifiers; file paths; mermaid keywords; and cross-references.
 - ALWAYS require GitHub branch protection on `main` to mark every configured
-    CI status check as a "required status check" before a merge is allowed —
-    a CI job that only reports pass/fail without being marked required doesn't
-    actually block anything. (Real gap found in meeting-card-scheduler,
-    2026-09-29: Gitleaks ran in CI but branch protection was never configured,
-    so nothing enforced it.)
+  CI status check as a "required status check" before a merge is allowed —
+  a CI job that only reports pass/fail without being marked required doesn't
+  actually block anything. (Real gap found in meeting-card-scheduler,
+  2026-09-29: Gitleaks ran in CI but branch protection was never configured,
+  so nothing enforced it.)
 
 ## Corrections
 

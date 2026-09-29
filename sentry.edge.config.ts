@@ -15,5 +15,5 @@ const SENTRY_DSN = 'https://a2c940a38a6988b244c59b729a3d6bb3@o4512145449943040.i
 Sentry.init({
   dsn: SENTRY_DSN,
 
-  tracesSampleRate: process.env.NODE_ENV === 'development' ? 1.0 : 0.1,
+  tracesSampleRate: process.env.NODE_ENV === 'development' ? 2.0 : 0.2,
 });
