@@ -95,10 +95,6 @@ aidlc/diagnostics/
 .env*
 !.env.example
 
-# Local-only fixtures for testing secret scanners — fabricated, non-functional
-# tokens by design; never committed, even though they aren't real credentials.
-/secret-scan-test-fixtures/
-
 # Test / coverage output
 /coverage
 /playwright-report/
