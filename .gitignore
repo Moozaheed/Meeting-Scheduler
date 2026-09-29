@@ -95,6 +95,10 @@ aidlc/diagnostics/
 .env*
 !.env.example
 
+# Local-only fixtures for testing secret scanners — fabricated, non-functional
+# tokens by design; never committed, even though they aren't real credentials.
+/secret-scan-test-fixtures/
+
 # Test / coverage output
 /coverage
 /playwright-report/
@@ -103,6 +107,10 @@ aidlc/diagnostics/
 # TypeScript incremental build info
 *.tsbuildinfo
 next-env.d.ts
+
+# code-review-gate hook: per-commit review-pass marker, local/ephemeral —
+# recording it in git would let a stale "approved" state ship in a clone.
+.claude/.review-gate/
 # END meeting-card-scheduler:gitignore
 .vercel
 supabase/.temp/
