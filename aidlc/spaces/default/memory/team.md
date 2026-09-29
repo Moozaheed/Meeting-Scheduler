@@ -57,6 +57,7 @@ Confirmed at interview: write code first, then tests right after each piece
   CI-blocking threshold via Vitest's built-in `--coverage` (v8 provider):
   `vitest run --coverage --coverage.thresholds.lines=80`.
 - **Toolset** (confirmed at interview, Q3):
+
   - **Unit/component**: Vitest + React Testing Library +
     `@testing-library/user-event` for form/interaction tests (scheduling
     form, agenda add/edit/reorder/remove, attendee CRUD).
@@ -80,6 +81,7 @@ Confirmed at interview: write code first, then tests right after each piece
 - **Persistence layer**: since data is per-browser-only (no shared
   database), the persistence layer (IndexedDB/localStorage) gets its own
   dedicated test coverage for save/load/clear behavior, including:
+
   - the no-data/first-visit case;
   - **storage quota exceeded**;
   - **corrupted/malformed stored data on load** (must degrade gracefully to
@@ -99,6 +101,7 @@ Confirmed at interview: write code first, then tests right after each piece
   browsers (attendees may open the shared card link on mobile), not
   desktop-only — confirmed at interview (Q9, answer B).
 - **CI quality gates**:
+
   - **Gate 1 (pre-merge, blocking)**: lint + typecheck + unit/component
     tests green + coverage ≥ 80% (no decrease) + no ESLint errors + the
     security gates in `## Code Style` below.
@@ -274,11 +277,11 @@ directory inspection during review.
 **Confirmed CI gate sequence**: secret scan → SAST → dependency audit, all
 blocking, before merge:
 
-| Stage | Gate | Action on failure |
-|---|---|---|
-| Pre-commit | Gitleaks secret scan | Block commit |
-| PR | ESLint (incl. security plugins) + CodeQL SAST | Block merge on Critical/High |
-| PR / scheduled | `npm audit` dependency scan | Fail on Critical/High with known exploit |
+| Stage          | Gate                                          | Action on failure                        |
+| -------------- | --------------------------------------------- | ---------------------------------------- |
+| Pre-commit     | Gitleaks secret scan                          | Block commit                             |
+| PR             | ESLint (incl. security plugins) + CodeQL SAST | Block merge on Critical/High             |
+| PR / scheduled | `npm audit` dependency scan                 | Fail on Critical/High with known exploit |
 
 ### PII and browser-storage disclosure
 
@@ -302,7 +305,18 @@ conscious, disclosed decisions rather than silent assumptions:
 data"** action that wipes IndexedDB/localStorage for that browser, since
 storage otherwise persists indefinitely with no retention policy next to
 PII.
+
 ## Forbidden
+
+- NEVER push commits directly to `main` — every change, however small,
+  goes through a short-lived feature branch and a pull request (Way of
+  Working, trunk-based development). This is currently the *only* thing
+  enforcing that discipline: branch protection on `main` is not
+  configured, so nothing on GitHub itself blocks a direct push.
+  Verify: `git log --first-parent main` should show only squash-merge
+  commits (each titled with its PR subject and a `(#N)` suffix) — a
+  commit on `main` with no matching merged PR number is a violation.
+  (identified 2026-09-29)
 
 <!-- Team-specific forbidden patterns -->
 
