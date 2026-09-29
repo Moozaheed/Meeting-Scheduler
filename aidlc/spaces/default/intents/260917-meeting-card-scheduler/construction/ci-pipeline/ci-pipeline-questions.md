@@ -66,3 +66,26 @@ decision.
 (PR-diff scope, per Q2's already-settled scope decision). Lint, typecheck,
 tests, coverage, CodeQL, and dependency audit remain removed — Q3's answer
 stands for everything except secret scanning.
+
+## Q5 — Maintain a local pre-push Gitleaks gate
+
+Q4 added Gitleaks to CI, which only runs after a push lands on `main`
+(this repo's existing "CI on merge only" trigger design — confirmed
+unchanged, `ci-config.md`). The human then asked, in conversation: "on the
+aidlc maintain that if i push anything it will always check the gitleaks
+gate after that it can push" — i.e. move the check earlier, to before the
+push leaves this machine, not just after it lands.
+
+[Answer]: Maintain a local `pre-push` git hook (already built and verified
+working this session — `.git/hooks/pre-push`, bundling a bundled Gitleaks
+v8.30.1 binary at `.git/hooks/gitleaks-bin` so it works without a
+system-wide install) that runs a full-history Gitleaks scan before every
+`git push` from this clone, and blocks the push (non-zero exit) if it
+finds an unreviewed leak. Verified both directions: a real secret-shaped
+string in a test commit is caught and blocks; the two already-reviewed
+findings (the hardcoded Supabase publishable key, the fake test fixture)
+are allowlisted via `.gitleaksignore` — read by both this local hook and
+the CI job — so they don't block every push forever. This governs the
+project's own record of the practice; the hook file itself lives in
+`.git/hooks/`, which git never commits or shares, so it protects this
+clone only, not every clone of the repo.
