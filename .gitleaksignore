@@ -1,0 +1,29 @@
+# Gitleaks allowlist — known, reviewed, accepted findings only.
+# Read by both the local pre-push hook (.git/hooks/pre-push) and the CI
+# gitleaks job (.github/workflows/ci.yml) automatically; gitleaks looks
+# for this file at the repo root by default.
+#
+# Anything NOT listed here still blocks a push / fails CI. Add an entry
+# only after actually reviewing the finding — never to silence a real
+# secret. One fingerprint per line: "<commit>:<file>:<rule>:<line>"
+# (or "<file>:<rule>:<line>" for an uncommitted/staged finding), copied
+# verbatim from `gitleaks detect --report-format json`'s "Fingerprint"
+# field, or from the console/action output.
+
+# lib/persistence/supabase-client.ts:23 — the Supabase publishable/anon
+# key. Public-client-safe by design (Supabase's own model: RLS policies
+# are the real access boundary, not keeping this key hidden) and already
+# ships inside the built browser bundle regardless — hardcoded here
+# deliberately (project decision, 2026-09-29). High-entropy enough to trip
+# gitleaks' generic-api-key heuristic even though it isn't actually secret.
+9ef4a68f9d9aa0a957f104d364be11f06ace3933:lib/persistence/supabase-client.ts:generic-api-key:23
+78f713749d8bf0f4e867a766c1da621cda5c1b19:lib/persistence/supabase-client.ts:generic-api-key:23
+
+# secret-scan-test-fixtures/fake-vercel-oidc-token.ts:16 — a deliberately
+# fabricated, non-functional JWT used to verify Gitleaks itself actually
+# catches this shape of secret. Not a real credential; see the file's own
+# header comment. Kept tracked and allowlisted (rather than removed) so
+# it continues to serve as a working example / regression check that this
+# scanner setup is still catching what it's supposed to.
+5bc7934665944debaedf9d10ffe3ba365de4a7f4:secret-scan-test-fixtures/fake-vercel-oidc-token.ts:generic-api-key:16
+9ef4a68f9d9aa0a957f104d364be11f06ace3933:secret-scan-test-fixtures/fake-vercel-oidc-token.ts:generic-api-key:16

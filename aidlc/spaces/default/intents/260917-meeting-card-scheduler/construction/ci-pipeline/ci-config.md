@@ -47,6 +47,30 @@ learnings step records that partial-closure precisely, rather than either
 re-asserting the full original mandate or leaving the superseding
 Corrections entry from Q3 unchanged as if nothing narrowed.
 
+## Local Pre-Push Gate (Q5)
+
+The CI `gitleaks` job above only runs **after** a push lands on `main`
+(this repo's existing merge-only CI trigger). Q5 adds an earlier check,
+local to each developer's machine, so a leak is caught before it ever
+leaves the machine:
+
+| File | Purpose |
+|---|---|
+| `.git/hooks/pre-push` | Runs before every `git push` from this clone. Full-history Gitleaks scan; blocks the push on any unreviewed finding, allows it through if clean. |
+| `.git/hooks/gitleaks-bin` | Bundled Gitleaks v8.30.1 binary, so the hook works without a system-wide install. A PATH-installed `gitleaks` takes priority if present. |
+| `.gitleaksignore` (repo root, tracked) | Allowlists the two findings already reviewed and accepted (the hardcoded Supabase publishable key, the fake test fixture at `secret-scan-test-fixtures/`), by exact fingerprint. Read automatically by both this hook and the CI `gitleaks` job, so the two stay consistent. |
+
+**Local-only, by git's own design**: `.git/hooks/` is never committed or
+shared — this protects pushes from this specific clone, not every clone of
+this repository. A fresh clone (or a teammate's machine) would need the
+hook re-installed to get the same protection; that reproducibility gap is
+disclosed, not silently assumed away. `.gitleaksignore`, by contrast, IS
+tracked and shared, since it governs the CI gate too.
+
+Verified this session before recording it here: a real secret-shaped test
+string (committed, then reverted) was caught and blocked the push; the two
+allowlisted findings were not.
+
 ## Assumptions & Open Questions
 
-None — Q4 resolved the one open question this re-run needed to answer.
+None — Q4 and Q5 resolved the open questions this re-run needed to answer.
