@@ -3,13 +3,21 @@
 ## Deployment Trigger
 
 Vercel's native GitHub App integration, triggered directly by a push to
-`main` — independently of the `.github/workflows/ci.yml` pipeline
-(`infrastructure-design/cicd-pipeline.md`; re-confirmed unchanged here). No
-new CD configuration file is needed beyond what already exists:
-`vercel.json` (build/output config, written at Code Generation) and the
-Vercel project's own git-linked settings (configured once through the
-dashboard/CLI, per `infrastructure-design`'s Q1 IaC decision — no formal
-IaC tool for a single project with nothing else to provision).
+`main`. **Updated on this re-run**: `.github/workflows/ci.yml` no longer
+exists (removed at `ci-pipeline` Q3 — see `ci-pipeline/quality-gates.md`),
+so "independently of" is now simply accurate rather than a parallel-track
+description — there is no CI pipeline running alongside the deploy at all,
+gated or otherwise. `vercel.json` (build/output config) was also deleted
+this session; it was never load-bearing for the deploy itself — Vercel's
+GitHub App integration deploys any push to `main` regardless, falling back
+to auto-detected Next.js build settings without it. The Vercel project's
+own git-linked settings (configured once through the dashboard/CLI, per
+`infrastructure-design`'s Q1 IaC decision) are unaffected.
+
+`infrastructure-design/infrastructure-specification.md`'s "IaC approach"
+row still names `vercel.json` as the IaC artifact — that document is
+flagged stale by this session's drift (it wasn't re-run), so this
+discrepancy is disclosed here rather than silently inherited.
 
 ## Environment Promotion
 

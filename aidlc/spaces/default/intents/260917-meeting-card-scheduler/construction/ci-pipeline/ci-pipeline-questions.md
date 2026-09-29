@@ -24,3 +24,31 @@ on every PR (slower, catches anything that slipped through pre-commit) or
 just the PR's diff (faster, matches the pre-commit hook's own scope)?
 
 [Answer]: PR-diff-only — fast, matches what the pre-commit hook already covers, proportionate for a project this size.
+
+## Q3 — Gate scope, given this session's direct deletion
+
+`team.md`/`project.md` mandate a full pre-merge gate sequence (secret scan,
+lint + typecheck + unit tests with an 80% coverage floor, CodeQL SAST,
+dependency audit) — `project.md`'s `## Forbidden` section states "NEVER
+merge without secret scanning, dependency scanning, and code security lint
+checks having passed" (affirmed 2026-09-17, interview Q7). Earlier in this
+session, at your explicit request, `.github/workflows/ci.yml` and
+`scheduled-audit.yml` (the files this stage had produced implementing that
+exact mandate) were deleted directly, outside this stage's process. That
+conflicts with the still-standing `project.md` mandate. How should this
+stage's output resolve that conflict?
+
+A. Regenerate the full gate sequence as originally designed — restores
+   `ci.yml` (secret scan, lint+typecheck+test w/ 80% coverage, CodeQL,
+   dependency audit) and `scheduled-audit.yml` (weekly npm audit), matching
+   the still-standing `project.md` mandate.
+B. Regenerate with no gates — formalizes the gate-free state from earlier in
+   this session. This directly contradicts the current `project.md`
+   `## Forbidden`/`## Mandated` entries, so choosing this also requires
+   updating those entries (via this stage's learnings step) so the record
+   matches the decision instead of contradicting it.
+C. Regenerate a reduced/different gate set — specify which gates you want
+   kept, dropped, or changed.
+X. Other (please specify)
+
+[Answer]: X. "remove all the gates i do not need those gates" — i.e. option B: regenerate with no gates. This also requires updating project.md's Forbidden/Mandated entries so the record matches (handled via this stage's learnings step).

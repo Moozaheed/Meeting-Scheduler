@@ -12,3 +12,4 @@
 
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
+- 2026-09-29T10:10:06Z — Stage reported skipped (Q1, answer A): human abandoned the hosted Vercel deployment entirely, local-dev-only from now on. deployment-pipeline/environment-provisioning (already approved this session) still describe a Vercel-hosted target as current — that content is now stale and needs its own pass to either be revised or explicitly marked historical, which was deferred to a separate step per the question's own option A wording.

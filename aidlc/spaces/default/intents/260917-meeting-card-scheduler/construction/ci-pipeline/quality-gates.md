@@ -1,54 +1,52 @@
 # Quality Gates — Meeting Scheduler & Invitation Card Generator
 
-## Gate 1 — Pre-merge (blocking, on every PR)
+## Decision (supersedes the prior design in this document)
 
-| Gate | Job | Criteria | Action on failure |
-|---|---|---|---|
-| Secret scan | `gitleaks` | Zero secrets detected in the PR's incoming commits | Block merge |
-| Lint | `lint-typecheck-test` | `npx eslint . --ext .ts,.tsx` — zero errors | Block merge |
-| Type check | `lint-typecheck-test` | `npx tsc --noEmit` — zero errors | Block merge |
-| Unit/component tests | `lint-typecheck-test` | `npx vitest run --coverage --coverage.thresholds.lines=80` — 100% pass rate, coverage ≥ 80% | Block merge |
-| SAST | `codeql` | Zero Critical/High CodeQL findings (Medium warns, does not block, per `team.md`) | Block merge on Critical/High |
-| Dependency scan | `dependency-audit` | `npm audit --omit=dev --audit-level=high` exits 0 | Block merge on Critical/High with a known exploit |
+**No quality gates are configured**, pre-merge or post-merge. This document
+previously defined a Gate 1 (secret scan, lint, type check, unit/component
+tests + 80% coverage, SAST, dependency scan — all blocking) and a Gate 2
+(E2E happy path, post-merge). Both are removed per the explicit human
+decision recorded in this stage's Q3 (`ci-pipeline-questions.md`):
+"remove all the gates i do not need those gates."
 
-All six are configured as required GitHub branch-protection status checks
-on `main` (see `ci-config.md`).
+## Current State
 
-## Gate 2 — Post-merge (blocking the deploy's fitness, not the merge itself)
+| Gate                                | Status                                                                                                                                       |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Secret scan (Gitleaks)              | Removed                                                                                                                                      |
+| Lint (`eslint`)                   | Removed as a CI gate — the command (`npm run lint`) still exists and can be run manually                                                  |
+| Type check (`tsc --noEmit`)       | Removed as a CI gate — still runnable manually                                                                                              |
+| Unit/component tests + 80% coverage | Removed as a CI gate —`npm run test:coverage` still exists and can be run manually                                                        |
+| SAST (CodeQL)                       | Removed                                                                                                                                      |
+| Dependency scan (`npm audit`)     | Removed, including the weekly scheduled job                                                                                                  |
+| E2E happy path (Playwright)         | Not in CI (already the case before this stage — see`code-summary.md`/`test-results.md`); `npm run test:e2e` remains runnable manually |
+| Accessibility (axe-core/pa11y)      | Never configured — moot now that no CI workflow exists to host it                                                                           |
 
-| Gate | Job | Criteria | Action on failure |
-|---|---|---|---|
-| E2E happy path | `e2e-smoke` | Full value-stream flow (create → agenda → attendees → preview → export) passes on all 5 configured browser projects | Investigate; Vercel's instant rollback is the accepted mitigation (`infrastructure-design/cicd-pipeline.md`'s disclosed Gate-2-timing trade-off) — this job cannot block the Vercel deploy itself, since Vercel deploys independently and before this job can even start |
+None of the above run automatically on any PR, push, or schedule. Every
+check listed as "runnable manually" requires someone to actually run it;
+nothing enforces that it happens before a merge or a deploy.
 
-This mirrors the disclosed timing trade-off `infrastructure-design`
-already recorded: because Vercel's GitHub App integration deploys directly
-on push to `main`, with no GitHub Actions secret to let this workflow gate
-that deploy, `e2e-smoke` necessarily runs against the already-live
-deployment rather than before it goes live.
+## What this means in practice
 
-## Non-Blocking Signals
+- Merges to `main` are unchecked — no lint, type, test, coverage, secret, or
+  vulnerability gate blocks anything.
+- Vercel's own build/deploy (outside this stage's scope) still runs
+  independently on push to `main` and is the only thing that would surface a
+  build-breaking error, since `npm run build` failing there would fail the
+  deploy — but that is a build check, not a quality or security gate.
+- Dependabot (`dependabot.yml`) still opens dependency-update PRs weekly,
+  but nothing now runs against them automatically; merging one is exactly as
+  unchecked as any other change.
 
-| Check | Where | Why non-blocking |
-|---|---|---|
-| Accessibility (axe-core/pa11y) | Not yet wired into either workflow — see Outstanding Items below | Affirmed as non-blocking per `team.md` even once added |
-| CodeQL Medium-severity findings | `codeql` job | `team.md`: "warn on Medium," only Critical/High block |
+## Standing conflict with `project.md` (disclosed, not silently carried)
 
-## Outstanding Items
-
-**Accessibility checks (axe-core/pa11y) are not yet wired into any CI
-workflow.** `team.md` affirms them as a non-blocking CI signal, but no
-axe-core/pa11y dependency exists in `package.json` yet, and no test file
-runs them. This is a real gap this stage is surfacing, not silently
-carrying forward — `cross-unit-traceability.md` (build-and-test) already
-recorded NFR2.1 as `Deferred` to this stage, and this stage has not yet
-closed that deferral. Recommended next action: add `@axe-core/playwright`
-and assert `page.axe... toHaveNoViolations()`-style checks inside
-`e2e/happy-path.spec.ts` (or a dedicated `e2e/accessibility.spec.ts`),
-reporting results without failing the job (`continue-on-error: true` on
-that check, or a separate non-required status check) — deferred to a
-follow-up rather than added speculatively in this pass, since it is new
-scope beyond what this stage's own produces list covers.
+This "no gates" state directly contradicts `project.md`'s `## Forbidden`
+entry — *"NEVER merge without secret scanning, dependency scanning, and code
+security lint checks having passed"* (affirmed 2026-09-17, interview Q7) —
+and the mirroring `## Mandated` entry. Per the human's Q3 answer, this
+stage's learnings step updates those two `project.md` entries so the written
+record matches this decision rather than contradicting it.
 
 ## Assumptions & Open Questions
 
-None beyond the accessibility gap explicitly flagged above.
+None.

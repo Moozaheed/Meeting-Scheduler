@@ -10,14 +10,19 @@ note for the one caveat that isn't reversible by a code rollback).
 
 ## When to Roll Back
 
-Roll back when:
-- The post-merge E2E smoke job (`ci.yml`'s `e2e-smoke`) fails on `main` after a deploy already went live (the accepted timing trade-off documented in `infrastructure-design/cicd-pipeline.md` and `ci-pipeline/quality-gates.md` — this job cannot block the Vercel deploy itself).
+**Updated on this re-run**: `ci.yml`'s automated `e2e-smoke` job no longer
+exists — `ci-pipeline` Q3 removed all CI workflows, so there is no
+automated post-merge signal to trigger a rollback anymore. Roll back when:
 - A manual smoke check (below) fails after a deploy.
 - A user-reported issue is traced to the most recent deploy.
 
+Since nothing runs automatically after a merge, catching a bad deploy now
+depends entirely on someone actually performing the manual smoke check or
+a user noticing and reporting a problem — there is no automated backstop.
+
 ## Rollback Steps
 
-1. **Identify the last known-good deployment.** Open the Vercel dashboard → Project → Deployments, and find the most recent deployment that passed its post-merge E2E smoke job (cross-reference the commit SHA against the GitHub Actions run history for `e2e-smoke`).
+1. **Identify the last known-good deployment.** Open the Vercel dashboard → Project → Deployments, and find the most recent deployment confirmed good by a manual smoke check (below) — there is no automated E2E run to cross-reference against anymore, so this identification is manual.
 2. **Promote it to production.** In the Vercel dashboard, select that deployment → "Promote to Production" (or via CLI: `vercel rollback <deployment-url>`). This is instant — Vercel repoints production traffic to the already-built, immutable deployment; no rebuild is triggered.
 3. **Verify the rollback.** Re-run the manual smoke check (below) against the production URL to confirm the rollback resolved the issue.
 4. **Fix forward.** Diagnose the root cause on a new branch, fix it, and let the normal CI/CD pipeline (pre-merge gates → merge → auto-deploy) ship the fix — do not attempt to patch the rolled-back deployment directly.
@@ -34,9 +39,9 @@ the same flow as `e2e/happy-path.spec.ts`:
 4. Export the PDF and confirm the download succeeds.
 5. Use "Clear my data" to remove the test meeting.
 
-This mirrors `ci.yml`'s automated `e2e-smoke` job — the manual version
-exists for the case where a human needs to verify production directly
-(e.g. immediately after a manual rollback, before the next CI run).
+This used to mirror `ci.yml`'s automated `e2e-smoke` job as a manual
+fallback; now that no automated job exists at all, this manual check is
+the *only* smoke verification this project has — not a fallback for one.
 
 ## Escalation
 

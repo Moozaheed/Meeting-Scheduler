@@ -1,59 +1,55 @@
 # CI Configuration — Meeting Scheduler & Invitation Card Generator
 
+## Decision (supersedes the prior design in this document)
+
+**No CI workflows are configured.** This is an explicit human decision
+(Q3, this stage), made after the conflict with `project.md`'s standing
+mandate was surfaced and confirmed: "remove all the gates i do not need
+those gates."
+
+This document previously described a four-gate `ci.yml` (Gitleaks,
+lint+typecheck+test, CodeQL, `npm audit`) plus a weekly `scheduled-audit.yml`.
+Both files were deleted directly earlier in this session (outside this
+stage's process, at the same human's request) and this re-run of the stage
+confirms — rather than silently re-creates — that outcome as the current
+design.
+
 ## CI Tool
 
-**GitHub Actions** — already the affirmed choice (`team.md` Security
-tooling, `infrastructure-design/cicd-pipeline.md`). No CodePipeline/Jenkins
-alternative was considered; this was locked well before this stage.
+**GitHub Actions** remains the affirmed tool choice (unchanged from the
+prior design) — this decision is about *what runs*, not the platform. No
+workflow files currently exist under `.github/workflows/`.
 
 ## Branch Strategy
 
 **Trunk-based development, squash-merge to `main`** (`team.md` Way of
-Working, `org.md`/`project.md` Mandated). Workflows trigger on `pull_request`
-into `main` (pre-merge gates) and `push` to `main` (post-merge Gate 2 E2E).
-No `develop`/`release/*` branches exist to configure.
+Working, `org.md`/`project.md` Mandated) — unchanged. This stage's decision
+does not touch branching; it only removes the automated checks that used to
+run around merges.
 
-## Workflow Files (written to the repository)
+## Workflow Files
 
-| File | Purpose |
+| File | Status |
 |---|---|
-| `.github/workflows/ci.yml` | Pre-merge gates (Gitleaks, lint+typecheck+unit tests, CodeQL, `npm audit`) on every PR; post-merge E2E smoke suite on push to `main` |
-| `.github/workflows/scheduled-audit.yml` | Weekly `npm audit` job, independent of PR activity (`team.md`: "a scheduled weekly job") |
-| `.github/dependabot.yml` | Weekly Dependabot PRs for npm direct/transitive dependency updates, dev-dependencies grouped into one PR to reduce noise |
-
-## Job Design
-
-`ci.yml`'s four pre-merge jobs (`gitleaks`, `lint-typecheck-test`,
-`codeql`, `dependency-audit`) run **in parallel**, not the sequential order
-`team.md`'s table lists them in — GitHub branch protection requiring all
-four as required status checks achieves the same blocking guarantee with
-faster feedback (`cicd-patterns.md`: "Fast pipelines, fast feedback...
-Parallelize independent stages"). The table's ordering describes gate
-*severity/category*, not a mandated execution sequence — none of the four
-checks depends on another's output.
-
-The `e2e-smoke` job is gated behind `lint-typecheck-test` succeeding first
-(`needs:`) and only runs on push to `main` (post-merge), matching Gate 2's
-definition exactly.
+| `.github/workflows/ci.yml` | **Removed** — no pre-merge or post-merge gates run |
+| `.github/workflows/scheduled-audit.yml` | **Removed** — no weekly scheduled `npm audit` |
+| `.github/dependabot.yml` | **Retained** — still opens weekly dependency-update PRs; nothing runs against them automatically now |
 
 ## Secrets Management in CI
 
-**None required** — confirmed at `infrastructure-design` (this stage's Q4
-there) and unchanged here: Vercel's native GitHub App integration deploys
-independently of these workflows, with no deploy token stored as a GitHub
-Actions secret. `GITHUB_TOKEN` (auto-provisioned by GitHub Actions) is the
-only credential any job uses, scoped to `contents: read` /
-`security-events: write` only.
+Not applicable — no workflow runs, so no CI-stored credentials are in use.
 
-## Branch Protection (to configure once, outside this stage's file output)
+## Standing conflict with `project.md` (disclosed, not silently carried)
 
-Recommended required status checks on `main`, configured through the
-GitHub repository settings UI (not expressible as a committed file):
-`gitleaks`, `lint-typecheck-test`, `codeql`, `dependency-audit`. This
-completes the "blocking" half of the gates this stage's workflow files
-implement — a check that reports a failure only blocks a merge once it is
-marked required in branch protection.
+`project.md`'s `## Forbidden` section states: *"NEVER merge without secret
+scanning, dependency scanning, and code security lint checks having passed"*
+(affirmed 2026-09-17, interview Q7), and `## Mandated` states the same
+requirement positively. This document's "no gates" decision directly
+contradicts both entries. Per the human's Q3 answer, this stage's learnings
+step is the mechanism that updates those `project.md` entries so the written
+record matches the decision instead of contradicting it — see this stage's
+`memory.md` and the learnings ritual run at this stage's approval gate.
 
 ## Assumptions & Open Questions
 
-None.
+None — Q3 resolved the one open question this re-run needed to answer.

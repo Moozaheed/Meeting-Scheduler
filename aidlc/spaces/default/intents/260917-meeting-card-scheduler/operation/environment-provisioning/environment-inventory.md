@@ -18,11 +18,11 @@ because none were designed (`infrastructure-specification.md`).
 This workflow has no credentials to perform these steps itself. Complete
 once, outside this session, before the first merge to `main`:
 
-1. **Create the Vercel project.** From the Vercel dashboard: "Add New Project" → import this GitHub repository. Vercel auto-detects the Next.js framework — no custom build command override needed beyond what `vercel.json` already specifies.
+1. **Create the Vercel project.** From the Vercel dashboard: "Add New Project" → import this GitHub repository. Vercel auto-detects the Next.js framework. **Updated on this re-run**: `vercel.json` was deleted this session (it was never load-bearing for the deploy — this step now relies entirely on Vercel's auto-detected Next.js build settings, which is what would have happened for any unconfigured field anyway).
 2. **Confirm the GitHub App integration is installed** on this repository (Vercel prompts for this during project creation) — this is what enables both the production deploy-on-merge-to-`main` trigger and automatic PR preview deployments, with no GitHub Actions secret required (`deployment-pipeline/cd-config.md`).
 3. **Verify no environment variables need setting.** `.env.example` is intentionally empty — there is nothing to configure in Vercel's Environment Variables panel for this app to function (zero third-party API dependencies, no runtime secrets).
 4. **(Optional) Add a custom domain**, if desired, in Vercel's Domains panel — not required; the default `*.vercel.app` subdomain satisfies NFR5.3's unlisted-URL access model as-is.
-5. **Confirm branch protection on `main`** in the GitHub repository settings, requiring the four CI status checks (`gitleaks`, `lint-typecheck-test`, `codeql`, `dependency-audit`) as documented in `ci-pipeline/ci-config.md` — this is a GitHub setting, not a Vercel one, and equally has no IaC representation.
+5. ~~Confirm branch protection on `main`, requiring the four CI status checks~~ — **removed on this re-run**. `ci-pipeline` Q3 (2026-09-29) removed all CI workflows; there are no status checks left to require. `main` currently has no branch protection configured at all (verified directly against the GitHub repository this session — 404, "Branch not protected"), so nothing blocks a merge regardless of what's set here. This is disclosed, not silently dropped: see `ci-pipeline/quality-gates.md` for the full current-state picture.
 
 ## Secrets & Parameter Store Audit
 

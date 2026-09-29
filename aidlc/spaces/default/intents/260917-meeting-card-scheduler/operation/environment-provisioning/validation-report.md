@@ -16,7 +16,7 @@ checklist above, which is outside this workflow's reach (no credentials).
 | No AWS resources inventoried here that weren't already absent from `infrastructure-specification.md`'s Infrastructure Services table | Match — that table's only row is explicitly "None" |
 | No secrets inventoried here that weren't already absent from `security-design.md` | Match |
 | Manual setup checklist covers every component `infrastructure-specification.md` names (Vercel project, GitHub App integration, Edge Middleware, DNS) | Covered — the middleware/CSP-nonce component (`proxy.ts`) requires no separate Vercel-side configuration; it deploys automatically as part of the Next.js build, same as any other route |
-| Manual checklist's branch-protection step matches `ci-pipeline/ci-config.md`'s recommended required status checks | Match (4 checks named identically) |
+| Manual checklist's branch-protection step matches `ci-pipeline/ci-config.md`'s recommended required status checks | **No longer applicable — updated on this re-run.** `ci-pipeline` Q3 removed all CI workflows, so `ci-config.md` recommends no status checks anymore. `environment-inventory.md`'s checklist item 5 was struck through rather than left claiming a match against checks that no longer exist. |
 
 ## Live-Environment Validation: Deferred
 
