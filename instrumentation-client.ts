@@ -12,8 +12,13 @@ import * as Sentry from '@sentry/nextjs';
  * connect-src entry is needed in proxy.ts's CSP (a real, hard-won
  * constraint this session — see test-results.md's Loop-Back Log).
  */
+// Hardcoded (project decision, 2026-09-29: no env-file dependency). The DSN
+// is client-safe by design — it's meant to be embedded in the browser
+// bundle, same as this app's Supabase publishable key.
+const SENTRY_DSN = 'https://a2c940a38a6988b244c59b729a3d6bb3@o4512145449943040.ingest.de.sentry.io/4512145473994832';
+
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  dsn: SENTRY_DSN,
 
   // 100% in dev, 10% in production — this app's traffic is low (NFR6.1:
   // under 20 concurrent users), so 10% is a starting point to revisit if

@@ -6,7 +6,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   gitleaks:
@@ -15,65 +14,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Full history, not a shallow PR-diff scope (this stage's original Q2
-          # intent) — a shallow fetch-depth only works for a single-commit PR;
-          # gitleaks-action needs the commit *before* the PR's first commit to
-          # resolve its scan range, which a 2+-commit PR won't have fetched at
-          # any fixed shallow depth (found via a real CI run on a 2-commit PR:
-          # "ambiguous argument ... unknown revision or path not in the working
-          # tree"). Cheap for a repo this size.
+          # Full history, not a shallow PR-diff scope — gitleaks-action needs
+          # the commit *before* the scan range to resolve it; a fixed shallow
+          # depth breaks on a multi-commit push. Cheap for a repo this size.
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  lint-typecheck-test:
-    name: Lint, typecheck, unit/component tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - name: Lint
-        run: npx eslint . --ext .ts,.tsx
-      - name: Type check
-        run: npx tsc --noEmit
-      - name: Unit/component tests with coverage
-        run: npx vitest run --coverage --coverage.thresholds.lines=80
-
-  codeql:
-    name: SAST (CodeQL)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript # default setup, this stage's Q1
-      - uses: github/codeql-action/analyze@v3
-
-  dependency-audit:
-    name: Dependency scan (npm audit)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
-
-# The former e2e-smoke job (Playwright, post-merge) is intentionally not
-# here. It only ever failed on CI-environment config (a malformed
-# NEXT_PUBLIC_SUPABASE_URL secret), never a real app bug — the same suite
-# passes locally against the live Supabase project every time. Removed so
-# merges to main deploy without depending on that job. The test itself
-# (e2e/happy-path.spec.ts) and playwright.config.ts are still in the repo
-# to run manually: `npm run test:e2e`.
+# This is the ONLY gate in this repository's CI, by explicit human decision
+# (ci-pipeline-questions.md Q4, 2026-09-29): re-added narrowly on top of Q3's
+# "no gates at all" baseline. Lint, typecheck, unit/component tests, CodeQL
+# SAST, and dependency audit remain intentionally absent — see
+# quality-gates.md for the full current-state picture and the standing
+# conflict this still carries with project.md's original Forbidden/Mandated
+# entries (superseded in project.md's Corrections, not deleted).

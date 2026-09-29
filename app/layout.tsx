@@ -19,8 +19,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const nonce = (await headers()).get('x-nonce') ?? undefined;
 
   return (
-    <html lang="en" data-csp-nonce={nonce}>
-      <body>{children}</body>
+    // suppressHydrationWarning on <html>/<body> only: browser extensions
+    // (e.g. Grammarly) inject attributes like className/data-gr-* into these
+    // two elements before React hydrates, causing a false-positive hydration
+    // mismatch warning that has nothing to do with app code — this is the
+    // fix Next.js/React docs recommend for exactly that case. It only
+    // suppresses the warning for this element's own attributes, not for any
+    // mismatch in the tree below it.
+    <html lang="en" data-csp-nonce={nonce} suppressHydrationWarning>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

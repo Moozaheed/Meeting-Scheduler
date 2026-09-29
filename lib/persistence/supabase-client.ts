@@ -13,23 +13,21 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import type { AgendaItem, Attendee, Meeting, MeetingRecord } from '@/types/domain';
 
+// Hardcoded rather than read from env (project decision, 2026-09-29: local-only
+// running, no hosted deployment, no env-file dependency for this value). Safe to
+// inline — this is the publishable/anon key, not the service-role secret; it is
+// public-client-safe by design (Supabase's own model: RLS policies are the real
+// access boundary, not keeping this key hidden) and already ships inside the
+// built browser bundle either way via the NEXT_PUBLIC_ prefix.
+const SUPABASE_URL = 'https://beqepuxdtchbknfaveaw.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_i3EnglacK9V_tnwYuV91Ag_LyPDaHYo';
+
 let client: SupabaseClient | null = null;
 
-/** Lazily creates the singleton client on first real use — not at module import time, so importing this file never throws in an environment without the env vars set (e.g. a test file that mocks this module wholesale). */
+/** Lazily creates the singleton client on first real use. */
 function getClient(): SupabaseClient {
   if (!client) {
-    // Trimmed defensively: a value pasted into a CI secrets UI easily picks
-    // up a trailing newline or space (found investigating a CI-only
-    // failure — proxy.ts's connect-src silently dropped the Supabase
-    // origin for the exact same reason).
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-    if (!url || !anonKey) {
-      throw new Error(
-        'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set — see .env.example.',
-      );
-    }
-    client = createClient(url, anonKey);
+    client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
   return client;
 }

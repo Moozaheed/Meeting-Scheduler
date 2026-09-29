@@ -16,9 +16,14 @@ import type { NextRequest } from 'next/server';
  * infrastructure-specification.md's Edge Middleware row (now serving the
  * same purpose from `proxy.ts`).
  */
+// Hardcoded, matching lib/persistence/supabase-client.ts's project decision
+// (2026-09-29): the origin here is derived from the same public Supabase
+// project URL, not a secret in its own right — CSP connect-src entries are
+// public by nature (they ship in every response header to every visitor).
+const SUPABASE_ORIGIN = 'https://beqepuxdtchbknfaveaw.supabase.co';
+
 export function proxy(request: NextRequest) {
   const nonce = generateNonce();
-  const supabaseOrigin = supabaseOriginFromEnv();
 
   const cspHeader = [
     `default-src 'self'`,
@@ -29,7 +34,15 @@ export function proxy(request: NextRequest) {
     // NOT grant JS eval()/Function() the way 'unsafe-eval' would, so this
     // stays a narrow, library-driven exception rather than a general
     // weakening of the script-src policy.
-    `script-src 'self' 'nonce-${nonce}' 'wasm-unsafe-eval'`,
+    //
+    // 'unsafe-eval' is added ONLY outside production: React/Turbopack's
+    // dev-mode tooling calls eval() to reconstruct stack traces and drive
+    // Fast Refresh (the browser console's own error names this — "React
+    // will never use eval() in production mode"). Gating it on NODE_ENV
+    // keeps the production script-src exactly as strict as before.
+    `script-src 'self' 'nonce-${nonce}' 'wasm-unsafe-eval'${
+      process.env.NODE_ENV !== 'production' ? ` 'unsafe-eval'` : ''
+    }`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data:`,
     `font-src 'self'`,
@@ -41,7 +54,7 @@ export function proxy(request: NextRequest) {
     // browser silently blocks the fetch as a CSP violation (found the same
     // way the two entries above were: a real E2E run against the live
     // deployment hanging on "Loading your meetings…" with no thrown error).
-    `connect-src 'self' data:${supabaseOrigin ? ` ${supabaseOrigin}` : ''}`,
+    `connect-src 'self' data: ${SUPABASE_ORIGIN}`,
     `frame-ancestors 'none'`,
   ].join('; ');
 
@@ -61,17 +74,6 @@ function generateNonce(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   return btoa(String.fromCharCode(...bytes));
-}
-
-/** Returns just the origin (e.g. "https://xyz.supabase.co") from NEXT_PUBLIC_SUPABASE_URL, or undefined if unset/malformed — never throws, so a missing env var degrades to a stricter CSP rather than crashing every request. Trims the raw value first: a value pasted into a CI secrets UI easily picks up a trailing newline or space, which would otherwise make `new URL()` throw and silently drop the Supabase origin from connect-src. */
-function supabaseOriginFromEnv(): string | undefined {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  if (!url) return undefined;
-  try {
-    return new URL(url).origin;
-  } catch {
-    return undefined;
-  }
 }
 
 export const config = {

@@ -1,54 +1,57 @@
 # Quality Gates — Meeting Scheduler & Invitation Card Generator
 
-## Gate 1 — Pre-merge (blocking, on every PR)
+## Decision (supersedes the prior design in this document)
 
-| Gate | Job | Criteria | Action on failure |
-|---|---|---|---|
-| Secret scan | `gitleaks` | Zero secrets detected in the PR's incoming commits | Block merge |
-| Lint | `lint-typecheck-test` | `npx eslint . --ext .ts,.tsx` — zero errors | Block merge |
-| Type check | `lint-typecheck-test` | `npx tsc --noEmit` — zero errors | Block merge |
-| Unit/component tests | `lint-typecheck-test` | `npx vitest run --coverage --coverage.thresholds.lines=80` — 100% pass rate, coverage ≥ 80% | Block merge |
-| SAST | `codeql` | Zero Critical/High CodeQL findings (Medium warns, does not block, per `team.md`) | Block merge on Critical/High |
-| Dependency scan | `dependency-audit` | `npm audit --omit=dev --audit-level=high` exits 0 | Block merge on Critical/High with a known exploit |
+**One quality gate is configured: secret scanning (Gitleaks).** This
+document has been through three decisions in the same session:
 
-All six are configured as required GitHub branch-protection status checks
-on `main` (see `ci-config.md`).
+1. Originally: a full Gate 1 (secret scan, lint, type check, unit/component
+   tests + 80% coverage, SAST, dependency scan — all blocking) and Gate 2
+   (E2E happy path, post-merge).
+2. Q3 (`ci-pipeline-questions.md`): "remove all the gates i do not need
+   those gates" — removed everything.
+3. Q4 (this re-run): "only add the gitleaks gate on the aidlc" — re-added
+   secret scanning specifically, nothing else.
 
-## Gate 2 — Post-merge (blocking the deploy's fitness, not the merge itself)
+## Current State
 
-| Gate | Job | Criteria | Action on failure |
-|---|---|---|---|
-| E2E happy path | `e2e-smoke` | Full value-stream flow (create → agenda → attendees → preview → export) passes on all 5 configured browser projects | Investigate; Vercel's instant rollback is the accepted mitigation (`infrastructure-design/cicd-pipeline.md`'s disclosed Gate-2-timing trade-off) — this job cannot block the Vercel deploy itself, since Vercel deploys independently and before this job can even start |
+| Gate | Status |
+|---|---|
+| Secret scan (Gitleaks) | **Active — blocking.** Runs on every push to `main`, full git history. |
+| Lint (`eslint`) | Removed as a CI gate (Q3, unchanged by Q4) — `npm run lint` still runnable manually |
+| Type check (`tsc --noEmit`) | Removed as a CI gate (Q3, unchanged by Q4) — still runnable manually |
+| Unit/component tests + 80% coverage | Removed as a CI gate (Q3, unchanged by Q4) — `npm run test:coverage` still runnable manually |
+| SAST (CodeQL) | Removed (Q3, unchanged by Q4) |
+| Dependency scan (`npm audit`) | Removed, including the weekly scheduled job (Q3, unchanged by Q4) |
+| E2E happy path (Playwright) | Not in CI (already the case before this session) — `npm run test:e2e` remains runnable manually |
+| Accessibility (axe-core/pa11y) | Never configured |
 
-This mirrors the disclosed timing trade-off `infrastructure-design`
-already recorded: because Vercel's GitHub App integration deploys directly
-on push to `main`, with no GitHub Actions secret to let this workflow gate
-that deploy, `e2e-smoke` necessarily runs against the already-live
-deployment rather than before it goes live.
+## What this means in practice
 
-## Non-Blocking Signals
+- **Secret leaks are caught** on every push to `main` — a committed
+  credential now blocks that push's CI run (`exit 1` from Gitleaks), same
+  as before Q3.
+- Everything else is still unchecked: lint, type, test, coverage,
+  SAST, and dependency-vulnerability issues can merge to `main` freely.
+- The app itself is no longer deployed anywhere (a separate, later
+  decision this session: the hosted Vercel deployment was abandoned
+  entirely — see `deployment-execution/deployment-execution-questions.md`
+  Q1 — this project runs local-dev-only now, `npm run dev`). There is no
+  longer a live build/deploy step downstream of a push at all, gated or
+  not.
+- Dependabot (`dependabot.yml`) still opens dependency-update PRs weekly;
+  merging one only triggers the Gitleaks scan, nothing else.
 
-| Check | Where | Why non-blocking |
-|---|---|---|
-| Accessibility (axe-core/pa11y) | Not yet wired into either workflow — see Outstanding Items below | Affirmed as non-blocking per `team.md` even once added |
-| CodeQL Medium-severity findings | `codeql` job | `team.md`: "warn on Medium," only Critical/High block |
+## Standing conflict with `project.md` (disclosed, not silently carried)
 
-## Outstanding Items
-
-**Accessibility checks (axe-core/pa11y) are not yet wired into any CI
-workflow.** `team.md` affirms them as a non-blocking CI signal, but no
-axe-core/pa11y dependency exists in `package.json` yet, and no test file
-runs them. This is a real gap this stage is surfacing, not silently
-carrying forward — `cross-unit-traceability.md` (build-and-test) already
-recorded NFR2.1 as `Deferred` to this stage, and this stage has not yet
-closed that deferral. Recommended next action: add `@axe-core/playwright`
-and assert `page.axe... toHaveNoViolations()`-style checks inside
-`e2e/happy-path.spec.ts` (or a dedicated `e2e/accessibility.spec.ts`),
-reporting results without failing the job (`continue-on-error: true` on
-that check, or a separate non-required status check) — deferred to a
-follow-up rather than added speculatively in this pass, since it is new
-scope beyond what this stage's own produces list covers.
+`project.md`'s `## Forbidden`/`## Mandated` entries (affirmed 2026-09-17,
+interview Q7) name three required checks: secret scanning, dependency
+scanning, and code security lint checks. Q4 closes the gap for one of the
+three (secret scanning); dependency scanning and code security lint checks
+remain absent. This stage's learnings step records that partial state
+precisely — not a full re-affirmation of the original mandate, and not an
+unchanged copy of Q3's "everything is superseded" note either.
 
 ## Assumptions & Open Questions
 
-None beyond the accessibility gap explicitly flagged above.
+None — Q4 resolved the one open question this re-run needed to answer.

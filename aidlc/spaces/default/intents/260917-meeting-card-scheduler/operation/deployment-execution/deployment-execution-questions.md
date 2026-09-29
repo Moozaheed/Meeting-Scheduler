@@ -1,26 +1,26 @@
 # Deployment Execution — Clarifying Questions
 
-This stage's standard questions (are pre-deployment checks passing, are
-database migrations required and tested, are dependent services available
-and healthy, what is the deployment window) are only partly applicable —
-this app has no database and zero third-party service dependencies
-(`tech-stack-decisions.md`), and `cd-config.md` already establishes there
-is no deployment window (deploy-on-merge, no gate). The one genuinely open
-item is below.
+## Q1 — Does this project still have a hosted deployment target?
 
-## Q1 — No commits exist yet in this repository: how should this stage proceed?
+This stage exists to push the built app through the CD pipeline to the
+hosted Vercel instance, run smoke tests against it, and validate its
+health. You've now said, in this session: "i no need for the vercel" and
+"i will run this only in the local" — but the two prior Operation stages
+(`deployment-pipeline`, `environment-provisioning`, both already approved)
+were built entirely around a live Vercel hosting story (auto-deploy on
+merge to `main`, a manual one-time Vercel project setup checklist, etc.),
+and `project.md`'s `## Mandated` still says "ALWAYS auto-deploy to the
+single hosted instance on every merge to `main`."
 
-The working tree currently has zero commits (`git log` reports "your
-current branch 'master' does not have any commits yet") and no `git
-remote` is configured. `environment-provisioning/validation-report.md`
-already deferred live-environment validation for the same underlying
-reason — this session has no credentials to create the Vercel project or
-push code, and per `environment-inventory.md`'s manual checklist, no
-Vercel project exists yet for this repository either. Given that, should
-this stage document the deployment execution as **Deferred** — recording
-exactly what pipeline will run and what the human must do to trigger the
-first real deployment once they commit, push, and complete the manual
-Vercel setup checklist — rather than attempting to simulate or fabricate
-a live deployment run?
+A. Abandon the hosted deployment entirely — this project is local-dev-only
+   from now on (`npm run dev`). This stage reports skipped, and
+   `deployment-pipeline`/`environment-provisioning`'s Vercel-centric design
+   should be revisited (a separate step after this one) to stop describing
+   a hosted target that no longer exists.
+B. Keep the hosted Vercel deployment as the project's actual target — "run
+   this only in the local" was about how you personally want to run/test
+   it right now, not a permanent change to what gets deployed. This stage
+   proceeds as designed.
+C. Something else — describe what you mean.
 
-[Answer]: Document as Deferred — record the exact pipeline and the human's remaining steps; do not fabricate a live deployment run.
+[Answer]: A. Abandon the hosted deployment entirely — this project is local-dev-only from now on. This stage reports skipped; deployment-pipeline/environment-provisioning's Vercel-centric design will be revisited separately.
