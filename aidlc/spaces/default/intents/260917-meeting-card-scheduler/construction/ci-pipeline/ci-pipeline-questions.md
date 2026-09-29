@@ -52,3 +52,17 @@ C. Regenerate a reduced/different gate set — specify which gates you want
 X. Other (please specify)
 
 [Answer]: X. "remove all the gates i do not need those gates" — i.e. option B: regenerate with no gates. This also requires updating project.md's Forbidden/Mandated entries so the record matches (handled via this stage's learnings step).
+
+## Q4 — Re-add a Gitleaks-only gate
+
+After Q3 landed on no gates at all, the human explicitly asked (in
+conversation, after independently confirming with a real Gitleaks run
+against a test fixture that the tool works as expected): "only add the
+gitleaks gate on the aidlc." This is unambiguous — a single, narrow
+addition on top of the Q3 baseline, not a re-opening of Q3's broader
+decision.
+
+[Answer]: Add a CI workflow with exactly one job: Gitleaks secret scanning
+(PR-diff scope, per Q2's already-settled scope decision). Lint, typecheck,
+tests, coverage, CodeQL, and dependency audit remain removed — Q3's answer
+stands for everything except secret scanning.

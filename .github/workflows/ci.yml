@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history, not a shallow PR-diff scope — gitleaks-action needs
+          # the commit *before* the scan range to resolve it; a fixed shallow
+          # depth breaks on a multi-commit push. Cheap for a repo this size.
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+# This is the ONLY gate in this repository's CI, by explicit human decision
+# (ci-pipeline-questions.md Q4, 2026-09-29): re-added narrowly on top of Q3's
+# "no gates at all" baseline. Lint, typecheck, unit/component tests, CodeQL
+# SAST, and dependency audit remain intentionally absent — see
+# quality-gates.md for the full current-state picture and the standing
+# conflict this still carries with project.md's original Forbidden/Mandated
+# entries (superseded in project.md's Corrections, not deleted).
